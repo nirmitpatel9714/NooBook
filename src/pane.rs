@@ -8,6 +8,7 @@ use tokio::sync::mpsc;
 
 pub struct Pane {
     pub id: usize,
+    pub name: String,
     pub active_language: String,
     pub input_buffer: String,
     pub cursor_pos: usize,
@@ -27,6 +28,7 @@ impl Pane {
         let (output_sender, output_receiver) = mpsc::channel(100);
         Self {
             id,
+            name: String::new(),
             active_language: default_language,
             input_buffer: String::new(),
             cursor_pos: 0,

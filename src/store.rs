@@ -88,6 +88,7 @@ pub fn clear_history() {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SavedCell {
+    pub name: String,
     pub active_language: String,
     pub history: Vec<String>,
     pub execution_count: usize,

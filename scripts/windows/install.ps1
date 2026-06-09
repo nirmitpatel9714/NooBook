@@ -7,7 +7,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $BinName = "noo.exe"
-$RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Definition))
 
 Write-Host "=== nooshell Installer ===" -ForegroundColor Cyan
 Write-Host ""

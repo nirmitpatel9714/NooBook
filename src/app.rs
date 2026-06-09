@@ -90,6 +90,8 @@ pub struct App {
     pub running: bool,
     pub state: SharedState,
     pub last_autosave: Instant,
+    pub renaming_cell: bool,
+    pub renaming_workspace: bool,
 }
 
 impl App {
@@ -103,6 +105,8 @@ impl App {
             running: true,
             state,
             last_autosave: Instant::now(),
+            renaming_cell: false,
+            renaming_workspace: false,
         }
     }
 
@@ -118,6 +122,8 @@ impl App {
             running: true,
             state,
             last_autosave: Instant::now(),
+            renaming_cell: false,
+            renaming_workspace: false,
         }
     }
 
@@ -170,11 +176,64 @@ impl App {
         if self.active_workspace + 1 < self.workspaces.len() {
             self.active_workspace += 1;
         }
+        self.renaming_cell = false;
+        self.renaming_workspace = false;
     }
 
     pub fn previous_workspace(&mut self) {
         if self.active_workspace > 0 {
             self.active_workspace -= 1;
+        }
+        self.renaming_cell = false;
+        self.renaming_workspace = false;
+    }
+
+    pub fn toggle_rename_cell(&mut self) {
+        self.renaming_workspace = false;
+        self.renaming_cell = !self.renaming_cell;
+        if self.renaming_cell {
+            let pane = self.current_pane_mut();
+            pane.input_buffer = pane.name.clone();
+            pane.cursor_pos = pane.name.len();
+        }
+    }
+
+    pub fn toggle_rename_workspace(&mut self) {
+        self.renaming_cell = false;
+        self.renaming_workspace = !self.renaming_workspace;
+        if self.renaming_workspace {
+            let name = self.current_workspace_mut().name.clone();
+            let pane = self.current_pane_mut();
+            pane.input_buffer = name.clone();
+            pane.cursor_pos = name.len();
+        }
+    }
+
+    pub fn commit_rename(&mut self) {
+        if self.renaming_cell {
+            let name = self.current_pane_mut().input_buffer.clone();
+            self.current_pane_mut().name = name;
+            self.current_pane_mut().input_buffer.clear();
+            self.current_pane_mut().cursor_pos = 0;
+            self.renaming_cell = false;
+        } else if self.renaming_workspace {
+            let name = {
+                let pane = self.current_pane_mut();
+                pane.input_buffer.clone()
+            };
+            self.current_workspace_mut().name = name;
+            self.current_pane_mut().input_buffer.clear();
+            self.current_pane_mut().cursor_pos = 0;
+            self.renaming_workspace = false;
+        }
+    }
+
+    pub fn cancel_rename(&mut self) {
+        if self.renaming_cell || self.renaming_workspace {
+            self.current_pane_mut().input_buffer.clear();
+            self.current_pane_mut().cursor_pos = 0;
+            self.renaming_cell = false;
+            self.renaming_workspace = false;
         }
     }
 
@@ -191,6 +250,7 @@ impl App {
     pub fn save_session(&self, key: &str) {
         let workspaces: Vec<store::SavedWorkspace> = self.workspaces.iter().map(|ws| {
             let cells = ws.panes.iter().map(|p| store::SavedCell {
+                name: p.name.clone(),
                 active_language: p.active_language.clone(),
                 history: p.history.clone(),
                 execution_count: p.execution_count,
@@ -246,6 +306,7 @@ impl App {
         self.workspaces = saved_workspaces.into_iter().map(|saved_ws| {
             let panes: Vec<Pane> = saved_ws.cells.iter().enumerate().map(|(i, c)| {
                 let mut pane = Pane::new(i, c.active_language.clone(), self.state.clone());
+                pane.name = c.name.clone();
                 pane.history = c.history.clone();
                 pane.history_index = c.history.len();
                 pane.execution_count = c.execution_count;

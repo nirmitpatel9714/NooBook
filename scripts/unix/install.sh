@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 INSTALL_DIR="${HOME}/.noo/bin"
 BIN_NAME="noo"
 RELEASE=true
@@ -23,7 +23,7 @@ echo "Building nooshell (release)..."
 )
 
 # On Windows (Git Bash / MSYS2 / Cygwin), the binary has .exe extension
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || -n "$MSYSTEM" ]]; then
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || -n "${MSYSTEM:-}" ]]; then
     BIN_NAME="noo.exe"
 fi
 

@@ -441,8 +441,13 @@ where
                     } else {
                         Style::default().fg(Color::DarkGray)
                     };
+                    let ws_label = if active_ws && app.renaming_workspace {
+                        " Rename ws... "
+                    } else {
+                        &format!(" {} ", ws.name)
+                    };
                     tab_spans.push(ratatui::text::Span::styled(
-                        format!(" {} ", ws.name),
+                        ws_label.to_string(),
                         style,
                     ));
                 }
@@ -475,7 +480,14 @@ where
 
             for (i, pane) in ws.panes.iter().enumerate() {
                 let active = i == active_idx;
-                let title = format!("[{}/{}] Cell {} ({}) ", i + 1, cell_count, i + 1, pane.active_language);
+                let cell_label = if app.renaming_cell && active {
+                    "Name:"
+                } else if !pane.name.is_empty() {
+                    &pane.name
+                } else {
+                    "Cell"
+                };
+                let title = format!("[{}/{}] {} ({}) ", i + 1, cell_count, cell_label, pane.active_language);
                 let border_style = if active {
                     Style::default().fg(Color::Yellow)
                 } else {
@@ -510,18 +522,30 @@ where
                         .and_then(|d| d.file_name().map(|n| n.to_string_lossy().to_string()))
                         .unwrap_or_default();
                     let (before, after) = pane.input_buffer.split_at(pane.cursor_pos);
-                    let prompt_line = ratatui::text::Line::from(vec![
-                        ratatui::text::Span::styled("➜ ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
-                        ratatui::text::Span::styled(format!("[{}]", pane.active_language), Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-                        ratatui::text::Span::styled(format!(" In {{{}}} ", pane.execution_count + 1), Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
-                        ratatui::text::Span::styled(format!("({})", dir_name), Style::default().fg(Color::Yellow)),
-                        ratatui::text::Span::raw(" "),
-                        ratatui::text::Span::styled("❯", Style::default().fg(Color::Magenta)),
-                        ratatui::text::Span::raw(" "),
-                        ratatui::text::Span::raw(before),
-                        ratatui::text::Span::styled("█", Style::default().fg(Color::Yellow)),
-                        ratatui::text::Span::raw(after),
-                    ]);
+                    let prompt_line = if app.renaming_cell || app.renaming_workspace {
+                        let label = if app.renaming_cell { " Name:" } else { " Workspace name:" };
+                        ratatui::text::Line::from(vec![
+                            ratatui::text::Span::styled("✎", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                            ratatui::text::Span::styled(label, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+                            ratatui::text::Span::raw(" "),
+                            ratatui::text::Span::raw(before),
+                            ratatui::text::Span::styled("█", Style::default().fg(Color::Yellow)),
+                            ratatui::text::Span::raw(after),
+                        ])
+                    } else {
+                        ratatui::text::Line::from(vec![
+                            ratatui::text::Span::styled("➜ ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                            ratatui::text::Span::styled(format!("[{}]", pane.active_language), Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+                            ratatui::text::Span::styled(format!(" In {{{}}} ", pane.execution_count + 1), Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                            ratatui::text::Span::styled(format!("({})", dir_name), Style::default().fg(Color::Yellow)),
+                            ratatui::text::Span::raw(" "),
+                            ratatui::text::Span::styled("❯", Style::default().fg(Color::Magenta)),
+                            ratatui::text::Span::raw(" "),
+                            ratatui::text::Span::raw(before),
+                            ratatui::text::Span::styled("█", Style::default().fg(Color::Yellow)),
+                            ratatui::text::Span::raw(after),
+                        ])
+                    };
                     lines.push(prompt_line);
 
                     let paragraph = Paragraph::new(lines).block(block).wrap(Wrap { trim: false });
@@ -540,9 +564,13 @@ where
                 if key.kind == event::KeyEventKind::Press {
                     match key.code {
                         KeyCode::Esc => {
-                            app.auto_save();
-                            app.running = false;
-                            return Ok(());
+                            if app.renaming_cell || app.renaming_workspace {
+                                app.cancel_rename();
+                            } else {
+                                app.auto_save();
+                                app.running = false;
+                                return Ok(());
+                            }
                         }
                         KeyCode::Left if key.modifiers == KeyModifiers::ALT || key.modifiers == KeyModifiers::CONTROL | KeyModifiers::ALT => {
                             app.previous_workspace();
@@ -563,21 +591,29 @@ where
                             }
                         }
                         KeyCode::Up if key.modifiers.contains(KeyModifiers::ALT) => {
+                            app.renaming_cell = false;
+                            app.renaming_workspace = false;
                             let ws = app.current_workspace_mut();
                             if ws.active_pane > 0 {
                                 ws.active_pane -= 1;
                             }
                         }
                         KeyCode::Down if key.modifiers.contains(KeyModifiers::ALT) => {
+                            app.renaming_cell = false;
+                            app.renaming_workspace = false;
                             let ws = app.current_workspace_mut();
                             if ws.active_pane + 1 < ws.panes.len() {
                                 ws.active_pane += 1;
                             }
                         }
                         KeyCode::Up if key.modifiers.contains(KeyModifiers::SHIFT) => {
+                            app.renaming_cell = false;
+                            app.renaming_workspace = false;
                             app.move_cell_up();
                         }
                         KeyCode::Down if key.modifiers.contains(KeyModifiers::SHIFT) => {
+                            app.renaming_cell = false;
+                            app.renaming_workspace = false;
                             app.move_cell_down();
                         }
                         KeyCode::Up => {
@@ -600,18 +636,26 @@ where
                             }
                         }
                         KeyCode::Tab => {
+                            app.renaming_cell = false;
+                            app.renaming_workspace = false;
                             let ws = app.current_workspace_mut();
                             if ws.active_pane + 1 < ws.panes.len() {
                                 ws.active_pane += 1;
                             }
                         }
                         KeyCode::BackTab => {
+                            app.renaming_cell = false;
+                            app.renaming_workspace = false;
                             let ws = app.current_workspace_mut();
                             if ws.active_pane > 0 {
                                 ws.active_pane -= 1;
                             }
                         }
                         KeyCode::Enter => {
+                            if app.renaming_cell || app.renaming_workspace {
+                                app.commit_rename();
+                                continue;
+                            }
                             let input = {
                                 let p = app.current_pane_mut();
                                 p.input_buffer.clone()
@@ -653,12 +697,14 @@ where
                         }
                         KeyCode::Char(c) if key.modifiers.contains(KeyModifiers::ALT) && key.modifiers.contains(KeyModifiers::SHIFT) => match c {
                             'W' => app.remove_workspace(),
+                            'R' => app.toggle_rename_workspace(),
                             _ => {}
                         },
                         KeyCode::Char(c) if key.modifiers.contains(KeyModifiers::ALT) => match c {
                             't' => app.add_cell(),
                             'w' => app.remove_cell(),
                             'n' => app.add_workspace(),
+                            'r' => app.toggle_rename_cell(),
                             'm' => {
                                 let _ = run_manage_tui(app).await;
                                 enable_raw_mode()?;
