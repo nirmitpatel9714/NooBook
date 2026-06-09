@@ -9,6 +9,7 @@ A multi-language REPL notebook and shell. Run interactive REPL sessions for mult
 - **Multi-language** — Python, JavaScript (Node.js), configurable via `languages.json`
 - **Workspaces** — horizontal tabs, each with its own set of vertically stacked notebook cells
 - **Cell management** — add (`Alt+T`), remove (`Alt+W`), reorder (`Shift+Up`/`Shift+Down`)
+- **Naming** — name cells (`Alt+R`) and workspaces (`Alt+Shift+R`) for easy identification
 - **Command history** — persists across sessions to `%APPDATA%\nooshell\history.json`
 - **Session management** — save/restore workspace state; manage from TUI (`Alt+M`) or CLI
 
@@ -36,6 +37,8 @@ noo delses <id>     Delete a session
 | `Alt+N` | New workspace |
 | `Alt+Up` / `Alt+Down` | History in cell |
 | `Enter` | Execute cell |
+| `Alt+R` | Rename cell |
+| `Alt+Shift+R` | Rename workspace |
 | `Alt+M` | Management TUI |
 | `Esc` | Exit |
 
