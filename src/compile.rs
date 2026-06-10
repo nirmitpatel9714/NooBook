@@ -3,14 +3,20 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
+/// Cross-compilation target for script compilation.
 pub enum Target {
+    /// 64-bit Windows (`x86_64-pc-windows-msvc`)
     Windows,
+    /// 64-bit Linux (`x86_64-unknown-linux-gnu`)
     Linux,
+    /// Apple Silicon Mac (`aarch64-apple-darwin`)
     Mac,
+    /// Build for the current host platform (no `--target` flag).
     Native,
 }
 
 impl Target {
+    /// Return the Rust target triple, or `None` for native builds.
     fn triple(&self) -> Option<&'static str> {
         match self {
             Target::Windows => Some("x86_64-pc-windows-msvc"),
@@ -20,6 +26,7 @@ impl Target {
         }
     }
 
+    /// Short human-readable label used in cache keys and build directory names.
     fn label(&self) -> &'static str {
         match self {
             Target::Windows => "windows",
@@ -29,6 +36,7 @@ impl Target {
         }
     }
 
+    /// Return the output binary filename (with `.exe` suffix on Windows).
     fn exe_name(&self, script_name: &str) -> String {
         match self {
             Target::Windows => format!("{}.exe", script_name),
@@ -37,6 +45,7 @@ impl Target {
         }
     }
 
+    /// Suffix for the temporary build directory.
     fn build_dir_suffix(&self) -> &'static str {
         match self {
             Target::Native => "native",
@@ -45,12 +54,14 @@ impl Target {
     }
 }
 
+/// Strip Windows long-path prefix (`\\?\`) from a path.
 fn clean_path(p: &Path) -> PathBuf {
     let s = p.to_string_lossy().to_string();
     let s = s.trim_start_matches("\\\\?\\");
     PathBuf::from(s)
 }
 
+/// Compute a content hash of the script file for cache invalidation.
 fn hash_script(script_path: &Path) -> io::Result<u64> {
     let content = fs::read_to_string(script_path)?;
     let mut hasher = DefaultHasher::new();
@@ -58,6 +69,7 @@ fn hash_script(script_path: &Path) -> io::Result<u64> {
     Ok(hasher.finish())
 }
 
+/// Path to the hash cache file (a dotfile next to the script).
 fn hash_cache_path(script_path: &Path, target_label: &str) -> PathBuf {
     let mut p = script_path.to_path_buf();
     let name = p.file_name().unwrap().to_string_lossy().to_string();
@@ -65,17 +77,28 @@ fn hash_cache_path(script_path: &Path, target_label: &str) -> PathBuf {
     p
 }
 
+/// Load a previously cached script hash, if any.
 fn load_cached_hash(script_path: &Path, target_label: &str) -> Option<u64> {
     let path = hash_cache_path(script_path, target_label);
     let content = fs::read_to_string(path).ok()?;
     content.trim().parse::<u64>().ok()
 }
 
+/// Save a script hash to the cache file.
 fn save_cached_hash(script_path: &Path, target_label: &str, hash: u64) {
     let path = clean_path(&hash_cache_path(script_path, target_label));
     let _ = fs::write(path, hash.to_string());
 }
 
+/// Compile a `.ns` script into a standalone native binary.
+///
+/// Steps:
+/// 1. Check hash cache — skip if script unchanged and binary exists.
+/// 2. Create a temporary Cargo workspace in `target/noo_compile/<name>-<target>/`.
+/// 3. Generate `main.rs` that embeds the script (`include_str!`) and runs it.
+/// 4. Build with `cargo build --release` (optionally cross-compile).
+/// 5. Copy the binary next to the original script.
+/// 6. Prompt to run the binary immediately (native only).
 pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
     let script_path = clean_path(&fs::canonicalize(script_path)?);
     let script_name = script_path
@@ -86,7 +109,6 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
     let out_dir = script_path.parent().unwrap_or(Path::new("."));
     let out_path = out_dir.join(target.exe_name(&script_name));
 
-    // hash cache check
     let platform = target.label();
     let current_hash = hash_script(&script_path)?;
     let cached = load_cached_hash(&script_path, platform);
@@ -96,10 +118,8 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
         return Ok(());
     }
 
-    // find nooshell workspace root
     let noo_root = find_crate_root()?;
 
-    // create build workspace
     let build_root = noo_root
         .join("target")
         .join("noo_compile")
@@ -107,7 +127,6 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
     let src_dir = build_root.join("src");
     fs::create_dir_all(&src_dir)?;
 
-    // find languages.json
     let lang_path = out_dir.join("languages.json");
     let lang_path = if lang_path.exists() {
         clean_path(&fs::canonicalize(&lang_path)?)
@@ -115,7 +134,6 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
         noo_root.join("languages.json")
     };
 
-    // generate Cargo.toml
     let noo_path_esc = noo_root.to_string_lossy().replace('\\', "\\\\");
     let cargo_toml = format!(
         "[package]\n\
@@ -131,7 +149,6 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
     );
     fs::write(build_root.join("Cargo.toml"), cargo_toml)?;
 
-    // compute cleanup schedule
     let script_content = fs::read_to_string(&script_path)?;
     let lang_content = fs::read_to_string(&lang_path)?;
     let config_tmp = crate::config::load_from_str(&lang_content).unwrap_or_default();
@@ -139,13 +156,11 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
         .unwrap_or(crate::script::NsScript { lines: Vec::new() });
     let cleanup = crate::script::compute_cleanup_schedule(&parsed.lines);
 
-    // generate main.rs
     let script_path_clean = clean_path(&script_path);
     let lang_path_clean = clean_path(&lang_path);
     let script_path_esc = script_path_clean.to_string_lossy().replace('\\', "\\\\");
     let lang_path_esc = lang_path_clean.to_string_lossy().replace('\\', "\\\\");
 
-    // serialize cleanup schedule as pipe-separated string
     let cleanup_parts: Vec<String> = cleanup
         .iter()
         .map(|(line, cmd)| format!("{line}:{cmd}"))
@@ -182,7 +197,6 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
     );
     fs::write(src_dir.join("main.rs"), main_rs)?;
 
-    // compile
     let banner = format!("\nCompiling {} for {platform}\n", script_name);
     print!("{banner}");
     let mut cargo_args = vec!["build", "--release"];
@@ -209,7 +223,6 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
         std::process::exit(1);
     }
 
-    // copy binary
     let release_dir = match target.triple() {
         Some(t) => build_root.join("target").join(t).join("release"),
         None => build_root.join("target").join("release"),
@@ -222,7 +235,6 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
 
     save_cached_hash(&script_path, platform, current_hash);
 
-    // run prompt (only for native)
     if !matches!(target, Target::Native) {
         return Ok(());
     }
@@ -263,6 +275,7 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
     Ok(())
 }
 
+/// Walk up from the executable path to find the crate root (`Cargo.toml`).
 fn find_crate_root() -> io::Result<PathBuf> {
     let exe = std::env::current_exe()?;
     let mut dir = exe.parent().unwrap();

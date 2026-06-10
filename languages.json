@@ -1,7 +1,7 @@
 {
   "py": {
     "cmd": "python",
-    "args": ["-i"],
+    "args": ["-i", "-q"],
     "mode": "repl"
   },
   "js": {
@@ -11,7 +11,7 @@
   },
   "ps": {
     "cmd": "powershell",
-    "args": ["-NoExit", "-Command", "-"],
+    "args": ["-NoLogo", "-NoExit", "-Command", "-"],
     "mode": "repl"
   }
 }

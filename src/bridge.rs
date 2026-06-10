@@ -1,11 +1,23 @@
 use crate::state::SharedState;
 
+/// Prefix used to identify state-sync output lines from REPL subprocesses.
+///
+/// Lines starting with this prefix are parsed as JSON and merged into
+/// [`SharedState`] instead of being displayed to the user.
 pub const STATE_PREFIX: &str = "__NS_SYNC__";
 
+/// Escape a string for embedding inside single-quoted strings in generated code.
 fn escape_for_single_quotes(s: &str) -> String {
     s.replace('\\', "\\\\").replace('\'', "\\'")
 }
 
+/// Generate code that injects the current [`SharedState`] into a REPL's global scope.
+///
+/// Returns `None` if the state is empty or if `lang` is not supported.
+///
+/// ## Supported languages
+/// - `"py"` — Python (`globals().update(...)`)
+/// - `"js"` — JavaScript (`Object.keys(...).forEach(...)`)
 pub fn injection_code(state: &SharedState, lang: &str) -> Option<String> {
     let json = state.as_json_string();
     if json == "{}" {
@@ -25,15 +37,20 @@ pub fn injection_code(state: &SharedState, lang: &str) -> Option<String> {
     }
 }
 
+/// Generate code that dumps user-defined variables from a REPL back to the state bridge.
+///
+/// The generated code prints variables prefixed with [`STATE_PREFIX`] so they are
+/// intercepted by [`Pane::poll_output`](crate::pane::Pane::poll_output) and merged
+/// into [`SharedState`].
+///
+/// Returns `None` if `lang` is not supported.
 pub fn dump_code(lang: &str) -> Option<String> {
     match lang {
         "py" => Some(
-            // Single-line exec() avoids REPL multi-line indentation issues
             "exec(\"import json as _j,builtins as _b\\n_r={}\\nfor _k,_v in globals().copy().items():\\n if not _k.startswith('_') and _k not in dir(_b):\\n  try:\\n   _j.dumps(_v);_r[_k]=_v\\n  except:pass\\nprint('__NS_SYNC__'+_j.dumps(_r,default=str))\\ndel _k,_v,_r,_j,_b\")"
                 .to_string(),
         ),
         "js" => Some(
-            // Use var, filter to non-underscore non-function, exclude Node internals
             "var _nsr={};Object.keys(global).filter(function(_nsk){\
              return _nsk[0]!=='_'&&typeof global[_nsk]!=='function'\
              &&['_nsr','_nsd','performance','crypto','navigator',\

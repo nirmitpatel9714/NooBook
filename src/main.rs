@@ -1,3 +1,12 @@
+//! # nooshell binary
+//!
+//! CLI entry point. Parses arguments and dispatches to:
+//! - **CLI mode** (`noo`) — single-pane REPL with history
+//! - **Notebook TUI** (`noo nbmode`) — multi-workspace tabbed notebook
+//! - **Management TUI** (`noo manage`) — session & history management
+//! - **Script mode** (`noo <script.ns>`) — batch script execution
+//! - **Compile mode** (`noo compile <script.ns>`) — compile to native binary
+
 use nooshell::app::App;
 use nooshell::config;
 use nooshell::noorc;
@@ -544,7 +553,6 @@ where
                             ratatui::text::Span::styled(label, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
                             ratatui::text::Span::raw(" "),
                             ratatui::text::Span::raw(before),
-                            ratatui::text::Span::styled("█", Style::default().fg(Color::Yellow)),
                             ratatui::text::Span::raw(after),
                         ])
                     } else {
@@ -557,14 +565,34 @@ where
                             ratatui::text::Span::styled("❯", Style::default().fg(Color::Magenta)),
                             ratatui::text::Span::raw(" "),
                             ratatui::text::Span::raw(before),
-                            ratatui::text::Span::styled("█", Style::default().fg(Color::Yellow)),
                             ratatui::text::Span::raw(after),
                         ])
                     };
                     lines.push(prompt_line);
 
+                    let cursor_y = lines.len() - 1;
+                    let cursor_x_in_content = if app.renaming_cell || app.renaming_workspace {
+                        let label = if app.renaming_cell { " Name:" } else { " Workspace name:" };
+                        let mut count = "✎".chars().count();
+                        count += label.chars().count();
+                        count += 1;
+                        count += before.chars().count();
+                        count
+                    } else {
+                        let mut count = "➜ ".chars().count();
+                        count += format!("[{}]", pane.active_language).chars().count();
+                        count += format!(" In {{{}}} ", pane.execution_count + 1).chars().count();
+                        count += format!("({})", dir_name).chars().count();
+                        count += " ❯ ".chars().count();
+                        count += before.chars().count();
+                        count
+                    };
+                    let cursor_x = chunks[i].x + 1 + cursor_x_in_content as u16;
+                    let cursor_y = chunks[i].y + 1 + cursor_y as u16;
+
                     let paragraph = Paragraph::new(lines).block(block).wrap(Wrap { trim: false });
                     f.render_widget(paragraph, chunks[i]);
+                    f.set_cursor_position((cursor_x, cursor_y));
                 } else {
                     let paragraph = Paragraph::new(vec![
                         ratatui::text::Line::from(format!(" {} outputs · {} history", pane.output_lines.len(), pane.history.len()))

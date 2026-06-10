@@ -2,12 +2,23 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
+/// Startup configuration loaded from the `noorc` file.
+///
+/// The file is located at `%APPDATA%/nooshell/noorc` (Windows) or
+/// `~/.config/nooshell/noorc` (Unix) and supports:
+/// - `language <key>` — set default language
+/// - `alias <name> = "<command>"` — define command aliases
+/// - Bare lines — run as startup commands
 pub struct Noorc {
+    /// Default language for the initial REPL pane.
     pub language: Option<String>,
+    /// Command aliases (name → expanded command).
     pub aliases: HashMap<String, String>,
+    /// Commands to run on startup (bare lines in the noorc file).
     pub startup: Vec<String>,
 }
 
+/// Return the platform-specific path to the `noorc` file.
 fn noorc_path() -> PathBuf {
     let base = std::env::var("APPDATA")
         .or_else(|_| std::env::var("HOME"))
@@ -16,6 +27,9 @@ fn noorc_path() -> PathBuf {
 }
 
 impl Noorc {
+    /// Load the `noorc` file from the default location.
+    ///
+    /// If the file does not exist or cannot be read, returns a default empty config.
     pub fn load() -> Self {
         let path = noorc_path();
         let content = match fs::read_to_string(&path) {

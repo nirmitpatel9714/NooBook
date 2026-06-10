@@ -23,13 +23,13 @@ js console.log("hello from js")
 ### Cross-language variable sharing
 
 ```ns
-py x = 42
+x = 42
 py name = "world"
 js console.log("JS sees x =", x)
-js console.log("JS sees name =", name)
+console.log("JS sees name =", name)
 js y = 99
 js greeting = "hello from js"
-py print("Python sees y =", y)
+print("Python sees y =", y)
 py print("Python sees greeting =", greeting)
 ```
 

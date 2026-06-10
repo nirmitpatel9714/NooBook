@@ -5,18 +5,29 @@ use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
 use crate::config::LanguageConfig;
 
+/// Temp file path set as `NOO_STATE_FILE` on every REPL subprocess.
+/// Currently reserved for future use by language-specific state dump scripts.
 fn state_file_path() -> PathBuf {
     let mut path = std::env::temp_dir();
     path.push("nooshell_state.json");
     path
 }
 
+/// Manages a single REPL subprocess with async stdin/stdout/stderr.
+///
+/// Spawns three Tokio tasks per process:
+/// - **stdin writer** — reads from an `mpsc` channel and writes to the process
+/// - **stdout reader** — forwards stdout lines to the output channel
+/// - **stderr reader** — forwards stderr lines to the output channel
 pub struct ProcessSession {
     pub process: Child,
     pub input_sender: mpsc::Sender<String>,
 }
 
 impl ProcessSession {
+    /// Spawn a new REPL subprocess from the given [`LanguageConfig`].
+    ///
+    /// `output_sender` receives every line the process writes to stdout or stderr.
     pub fn start(
         config: &LanguageConfig,
         output_sender: mpsc::Sender<String>,
@@ -75,6 +86,9 @@ impl ProcessSession {
         })
     }
 
+    /// Send a line of input to the subprocess's stdin.
+    ///
+    /// A trailing newline is added automatically if not present.
     pub async fn send_input(&self, input: &str) {
         let _ = self.input_sender.send(input.to_string()).await;
     }
