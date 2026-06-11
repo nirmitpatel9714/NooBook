@@ -13,5 +13,15 @@
     "cmd": "powershell",
     "args": ["-NoLogo", "-NoExit", "-Command", "-"],
     "mode": "repl"
+  },
+  "cpp": {
+    "cmd": "echo",
+    "args": ["C++ REPL is not available; use clangd for highlighting"],
+    "mode": "repl",
+    "lsp": {
+      "cmd": "clangd",
+      "args": [],
+      "language_id": "cpp"
+    }
   }
 }

@@ -9,6 +9,7 @@
 
 use nooshell::app::App;
 use nooshell::config;
+use nooshell::highlight;
 use nooshell::noorc;
 use nooshell::passthrough;
 use nooshell::script::NsScript;
@@ -196,6 +197,16 @@ fn parse_lang_command(input: &str, config: &config::ConfigMap) -> Option<(String
     None
 }
 
+/// Highlight a line, using LSP if available.
+fn highlight_line(input: &str, lang: &str, cursor_pos: usize, app: &mut App) -> (String, String) {
+    if app.compute_lsp_tokens()
+        && let Some((ref tokens, _, _)) = app.lsp_cache
+    {
+        return highlight::highlight_ansi_lsp(input, lang, cursor_pos, tokens);
+    }
+    highlight::highlight_ansi(input, lang, cursor_pos)
+}
+
 async fn run_cli(app: &mut App, startup: &[String]) -> Result<(), Box<dyn Error>> {
     for cmd in startup {
         app.current_pane_mut().input_buffer = cmd.clone();
@@ -372,6 +383,10 @@ fn readline_with_history(prefix: &str, prompt: &str, app: &mut App) -> io::Resul
     let history = store::load_history();
     let entries: Vec<String> = history.commands.iter().map(|c| c.command.clone()).collect();
     let mut hist_idx = entries.len();
+    let lang = {
+        let ws = &app.workspaces[app.active_workspace];
+        ws.panes[ws.active_pane].active_language.clone()
+    };
 
     write!(stdout, "{}\r{}", prefix, prompt)?;
     stdout.flush()?;
@@ -393,10 +408,11 @@ fn readline_with_history(prefix: &str, prompt: &str, app: &mut App) -> io::Resul
             for line in &output_lines {
                 writeln!(stdout, "{}", line)?;
             }
-            let (before, after) = input.split_at(cursor_pos);
-            write!(stdout, "{}{}{}", prompt, before, after)?;
-            if after.len() > 0 {
-                write!(stdout, "\x1b[{}D", after.len())?;
+            let (hl_before, hl_after) = highlight_line(&input, &lang, cursor_pos, app);
+            write!(stdout, "{}{}{}", prompt, hl_before, hl_after)?;
+            if !hl_after.is_empty() {
+                let plain_after = &input[cursor_pos..];
+                write!(stdout, "\x1b[{}D", plain_after.chars().count())?;
             }
             stdout.flush()?;
         }
@@ -456,10 +472,11 @@ fn readline_with_history(prefix: &str, prompt: &str, app: &mut App) -> io::Resul
                         }
                         _ => {}
                     }
-                    let (before, after) = input.split_at(cursor_pos);
-                    write!(stdout, "\r\x1b[2K{}{}{}", prompt, before, after)?;
-                    if after.len() > 0 {
-                        write!(stdout, "\x1b[{}D", after.len())?;
+                    let (hl_before, hl_after) = highlight_line(&input, &lang, cursor_pos, app);
+                    write!(stdout, "\r\x1b[2K{}{}{}", prompt, hl_before, hl_after)?;
+                    if !hl_after.is_empty() {
+                        let plain_after = &input[cursor_pos..];
+                        write!(stdout, "\x1b[{}D", plain_after.chars().count())?;
                     }
                     stdout.flush()?;
                 }
@@ -507,6 +524,8 @@ where
     loop {
         app.poll_all_panes();
         app.check_autosave_interval();
+
+        app.compute_lsp_tokens();
 
         terminal.draw(|f| {
             let main_chunks = Layout::default()
@@ -607,18 +626,28 @@ where
                         .ok()
                         .and_then(|d| d.file_name().map(|n| n.to_string_lossy().to_string()))
                         .unwrap_or_default();
-                    let (before, after) = pane.input_buffer.split_at(pane.cursor_pos);
+                    let (before, _after) = pane.input_buffer.split_at(pane.cursor_pos);
+                    let (before_spans, after_spans) = if let Some((ref tokens, _, _)) = app.lsp_cache {
+                        highlight::highlight_split_lsp(
+                            &pane.input_buffer, &pane.active_language, pane.cursor_pos, tokens
+                        )
+                    } else {
+                        highlight::highlight_split(
+                            &pane.input_buffer, &pane.active_language, pane.cursor_pos
+                        )
+                    };
                     let prompt_line = if app.renaming_cell || app.renaming_workspace {
                         let label = if app.renaming_cell { " Name:" } else { " Workspace name:" };
-                        ratatui::text::Line::from(vec![
+                        let mut spans = vec![
                             ratatui::text::Span::styled("✎", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
                             ratatui::text::Span::styled(label, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
                             ratatui::text::Span::raw(" "),
-                            ratatui::text::Span::raw(before),
-                            ratatui::text::Span::raw(after),
-                        ])
+                        ];
+                        spans.extend(before_spans);
+                        spans.extend(after_spans);
+                        ratatui::text::Line::from(spans)
                     } else {
-                        ratatui::text::Line::from(vec![
+                        let mut spans = vec![
                             ratatui::text::Span::styled("➜ ", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
                             ratatui::text::Span::styled(format!("[{}]", pane.active_language), Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
                             ratatui::text::Span::styled(format!(" In {{{}}} ", pane.execution_count + 1), Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
@@ -626,9 +655,10 @@ where
                             ratatui::text::Span::raw(" "),
                             ratatui::text::Span::styled("❯", Style::default().fg(Color::Magenta)),
                             ratatui::text::Span::raw(" "),
-                            ratatui::text::Span::raw(before),
-                            ratatui::text::Span::raw(after),
-                        ])
+                        ];
+                        spans.extend(before_spans);
+                        spans.extend(after_spans);
+                        ratatui::text::Line::from(spans)
                     };
                     lines.push(prompt_line);
 

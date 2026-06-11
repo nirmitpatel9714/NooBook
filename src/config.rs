@@ -3,6 +3,18 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// LSP server configuration for syntax highlighting.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LspConfig {
+    /// The LSP server executable (e.g., `"clangd"`).
+    pub cmd: String,
+    /// Arguments for the LSP server.
+    #[serde(default)]
+    pub args: Vec<String>,
+    /// The language identifier sent to the LSP server (e.g., `"cpp"`).
+    pub language_id: String,
+}
+
 /// Configuration for a single language REPL.
 ///
 /// Deserialized from `languages.json`.
@@ -14,6 +26,9 @@ pub struct LanguageConfig {
     pub args: Vec<String>,
     /// Execution mode. Currently always `"repl"`.
     pub mode: String,
+    /// Optional LSP server configuration for syntax highlighting.
+    #[serde(default)]
+    pub lsp: Option<LspConfig>,
 }
 
 /// Map of language alias (e.g., `"py"`, `"js"`) to [`LanguageConfig`].

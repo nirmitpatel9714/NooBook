@@ -21,6 +21,8 @@ pub mod bridge;
 pub mod compile;
 pub mod config;
 pub mod execution;
+pub mod highlight;
+pub mod lsp;
 pub mod noorc;
 pub mod pane;
 pub mod passthrough;

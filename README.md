@@ -15,6 +15,8 @@ and cross-language variable sharing.
   native binaries (supports cross-compilation for Windows, Linux, macOS)
 - **Multi-language** — Python, JavaScript (Node.js), PowerShell, bash, and any language
   configurable via `languages.json`
+- **LSP-based syntax highlighting** — configure an LSP server per language for semantic
+  token highlighting (e.g., `clangd` for C++)
 - **Passthrough terminal** (`noo pass`) — full PTY-backed shell session for
   interactive programs (vim, htop, etc.)
 - **Cross-language variable sharing** — variables defined in one language are

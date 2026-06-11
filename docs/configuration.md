@@ -30,7 +30,19 @@ Defines the REPL commands for each language. Located in the project root (or wor
 | ---      | ---             | ---                                          |
 | `cmd`    | string          | The executable to run                        |
 | `args`   | array of string | Arguments passed to the executable           |
-| `mode`   | string           | Currently always `"repl"` (future: compile)  |
+| `mode`   | string          | Currently always `"repl"` (future: compile)  |
+| `lsp`    | object (optional) | LSP server config for syntax highlighting  |
+
+### LSP config (`lsp` field)
+
+| Field         | Type            | Description                                     |
+| ---           | ---             | ---                                             |
+| `cmd`         | string          | The LSP server executable (e.g., `"clangd"`)    |
+| `args`        | array of string | Arguments for the LSP server                    |
+| `language_id` | string          | Language ID sent to the LSP server (e.g., `"cpp"`) |
+
+Syntax highlighting uses the LSP server's `textDocument/semanticTokens/full` capability.
+If no LSP config is provided, highlighting falls back to the built-in keyword-based tokenizer.
 
 ### Adding a language
 
@@ -43,6 +55,23 @@ Defines the REPL commands for each language. Located in the project root (or wor
 ```
 
 The key (`"rb"`) becomes the language alias used in `lang(code)` syntax and language switching.
+
+### Example with LSP (C++)
+
+```json
+"cpp": {
+  "cmd": "echo",
+  "args": ["C++ REPL not available"],
+  "mode": "repl",
+  "lsp": {
+    "cmd": "clangd",
+    "args": [],
+    "language_id": "cpp"
+  }
+}
+```
+
+This enables C++ syntax highlighting via `clangd` (requires `clangd` on PATH). The REPL cmd is a placeholder since C++ has no standard REPL.
 
 ## `noorc`
 

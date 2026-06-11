@@ -1,4 +1,5 @@
 use crate::config::ConfigMap;
+use crate::lsp::{LspClient, LspConfig as LspClientConfig, LspToken};
 use crate::pane::Pane;
 use crate::state::SharedState;
 use crate::store;
@@ -111,6 +112,10 @@ pub struct App {
     pub last_autosave: Instant,
     pub renaming_cell: bool,
     pub renaming_workspace: bool,
+    /// Lazily-started LSP clients per language key.
+    pub lsp_clients: HashMap<String, LspClient>,
+    /// Cached LSP tokens for the active pane, recomputed before each draw.
+    pub lsp_cache: Option<(Vec<LspToken>, String, String)>,
 }
 
 impl App {
@@ -127,6 +132,8 @@ impl App {
             last_autosave: Instant::now(),
             renaming_cell: false,
             renaming_workspace: false,
+            lsp_clients: HashMap::new(),
+            lsp_cache: None,
         }
     }
 
@@ -145,6 +152,8 @@ impl App {
             last_autosave: Instant::now(),
             renaming_cell: false,
             renaming_workspace: false,
+            lsp_clients: HashMap::new(),
+            lsp_cache: None,
         }
     }
 
@@ -278,6 +287,78 @@ impl App {
     pub fn poll_all_panes(&mut self) {
         for ws in &mut self.workspaces {
             ws.poll();
+        }
+    }
+
+    /// Get or start an LSP client for the given language key.
+    /// Returns `None` if the language has no LSP config or the server fails to start.
+    pub fn get_lsp_client(&mut self, lang: &str) -> Option<&mut LspClient> {
+        if self.lsp_clients.contains_key(lang) {
+            return self.lsp_clients.get_mut(lang);
+        }
+        let lsp_cfg = self.config.get(lang).and_then(|c| c.lsp.clone())?;
+        match LspClient::start(&LspClientConfig {
+            cmd: lsp_cfg.cmd,
+            args: lsp_cfg.args,
+            language_id: lsp_cfg.language_id.clone(),
+        }) {
+            Ok(client) => {
+                self.lsp_clients.insert(lang.to_string(), client);
+                self.lsp_clients.get_mut(lang)
+            }
+            Err(e) => {
+                eprintln!("LSP start error for '{}': {}", lang, e);
+                None
+            }
+        }
+    }
+
+    /// Invalidate the LSP cache so it is recomputed on the next draw.
+    pub fn invalidate_lsp_cache(&mut self) {
+        self.lsp_cache = None;
+    }
+
+    /// Compute LSP tokens for the active pane, caching the result.
+    /// Returns `true` if tokens were computed (LSP is available).
+    pub fn compute_lsp_tokens(&mut self) -> bool {
+        let (lang, text) = {
+            let ws = self.current_workspace_mut();
+            let lang = ws.panes[ws.active_pane].active_language.clone();
+            let text = ws.panes[ws.active_pane].input_buffer.clone();
+            (lang, text)
+        };
+
+        // Check if cache is still valid
+        if let Some((_, ref cached_text, ref cached_lang)) = self.lsp_cache {
+            if cached_text == &text && cached_lang == &lang {
+                return true;
+            }
+        }
+
+        let lsp_cfg = match self.config.get(&lang).and_then(|c| c.lsp.clone()) {
+            Some(cfg) => cfg,
+            None => return false,
+        };
+
+        let client = match self.get_lsp_client(&lang) {
+            Some(c) => c,
+            None => return false,
+        };
+
+        let uri = format!("noo:///document.{}", if lang == "cpp" || lang == "cxx" { "cpp" } else { &lang });
+
+        match client.get_tokens(&text, &uri, &lsp_cfg.language_id) {
+            Ok(tokens) => {
+                let filtered: Vec<LspToken> = tokens.into_iter()
+                    .filter(|t| t.token_type != crate::lsp::NORM_NORMAL)
+                    .collect();
+                self.lsp_cache = Some((filtered, text, lang));
+                true
+            }
+            Err(e) => {
+                eprintln!("LSP token error: {}", e);
+                false
+            }
         }
     }
 
