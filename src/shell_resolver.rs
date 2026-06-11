@@ -133,9 +133,7 @@ fn search_common_windows_paths(exe: &str) -> Option<PathBuf> {
 
     // Check WSL paths
     let local_app_data = std::env::var("LOCALAPPDATA").ok()?;
-    let wsl_paths = [
-        format!(r"{}\Microsoft\WindowsApps", local_app_data),
-    ];
+    let wsl_paths = [format!(r"{}\Microsoft\WindowsApps", local_app_data)];
     for dir in &wsl_paths {
         let candidate = Path::new(dir).join(&exe);
         if candidate.is_file() {

@@ -9,6 +9,7 @@ use std::path::PathBuf;
 /// - `language <key>` — set default language
 /// - `alias <name> = "<command>"` — define command aliases
 /// - Bare lines — run as startup commands
+#[derive(Default)]
 pub struct Noorc {
     /// Default language for the initial REPL pane.
     pub language: Option<String>,
@@ -62,15 +63,5 @@ impl Noorc {
         }
 
         noorc
-    }
-}
-
-impl Default for Noorc {
-    fn default() -> Self {
-        Self {
-            language: None,
-            aliases: HashMap::new(),
-            startup: Vec::new(),
-        }
     }
 }

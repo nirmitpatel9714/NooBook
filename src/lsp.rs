@@ -1,4 +1,4 @@
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::process::{Child, ChildStdin, Command, Stdio};
@@ -62,9 +62,13 @@ impl LspClient {
             .spawn()
             .map_err(|e| format!("Failed to spawn LSP '{}': {}", config.cmd, e))?;
 
-        let stdin = child.stdin.take()
+        let stdin = child
+            .stdin
+            .take()
             .ok_or_else(|| "LSP stdin not available".to_string())?;
-        let stdout = child.stdout.take()
+        let stdout = child
+            .stdout
+            .take()
             .ok_or_else(|| "LSP stdout not available".to_string())?;
         let reader = BufReader::new(Box::new(stdout) as Box<dyn std::io::Read + Send>);
 
@@ -133,10 +137,11 @@ impl LspClient {
     }
 
     fn write_message(&mut self, msg: &Value) -> Result<(), String> {
-        let body = serde_json::to_string(msg)
-            .map_err(|e| format!("LSP JSON serialization: {}", e))?;
+        let body =
+            serde_json::to_string(msg).map_err(|e| format!("LSP JSON serialization: {}", e))?;
         let header = format!("Content-Length: {}\r\n\r\n", body.len());
-        self.stdin.write_all(header.as_bytes())
+        self.stdin
+            .write_all(header.as_bytes())
             .and_then(|_| self.stdin.write_all(body.as_bytes()))
             .and_then(|_| self.stdin.flush())
             .map_err(|e| format!("LSP write error: {}", e))
@@ -147,27 +152,30 @@ impl LspClient {
             let mut content_length: Option<usize> = None;
             loop {
                 let mut line = String::new();
-                self.reader.read_line(&mut line)
+                self.reader
+                    .read_line(&mut line)
                     .map_err(|e| format!("LSP read error: {}", e))?;
                 let trimmed = line.trim_end_matches("\r\n").trim_end_matches('\n');
                 if trimmed.is_empty() {
                     break;
                 }
                 if let Some(len) = trimmed.strip_prefix("Content-Length: ") {
-                    content_length = Some(len.parse::<usize>()
-                        .map_err(|_| "Invalid Content-Length".to_string())?);
+                    content_length = Some(
+                        len.parse::<usize>()
+                            .map_err(|_| "Invalid Content-Length".to_string())?,
+                    );
                 }
             }
-            let len = content_length
-                .ok_or_else(|| "Missing Content-Length header".to_string())?;
+            let len = content_length.ok_or_else(|| "Missing Content-Length header".to_string())?;
 
             let mut buf = vec![0u8; len];
-            self.reader.read_exact(&mut buf)
+            self.reader
+                .read_exact(&mut buf)
                 .map_err(|e| format!("LSP body read error: {}", e))?;
-            let body = String::from_utf8(buf)
-                .map_err(|_| "Invalid UTF-8 in LSP response".to_string())?;
-            let value: Value = serde_json::from_str(&body)
-                .map_err(|e| format!("LSP JSON parse: {}", e))?;
+            let body =
+                String::from_utf8(buf).map_err(|_| "Invalid UTF-8 in LSP response".to_string())?;
+            let value: Value =
+                serde_json::from_str(&body).map_err(|e| format!("LSP JSON parse: {}", e))?;
 
             // Only return messages with an id (responses) or method (requests)
             if value.get("id").is_some() || value.get("method").is_some() {
@@ -179,13 +187,13 @@ impl LspClient {
     fn read_response(&mut self, expected_id: u64) -> Result<Value, String> {
         loop {
             let msg = self.read_message()?;
-            if let Some(id) = msg.get("id").and_then(|v| v.as_u64()) {
-                if id == expected_id {
-                    if let Some(error) = msg.get("error") {
-                        return Err(format!("LSP error response: {:?}", error));
-                    }
-                    return Ok(msg.get("result").cloned().unwrap_or(Value::Null));
+            if let Some(id) = msg.get("id").and_then(|v| v.as_u64())
+                && id == expected_id
+            {
+                if let Some(error) = msg.get("error") {
+                    return Err(format!("LSP error response: {:?}", error));
                 }
+                return Ok(msg.get("result").cloned().unwrap_or(Value::Null));
             }
         }
     }
@@ -207,22 +215,25 @@ impl LspClient {
         let result = self.send_request("initialize", params)?;
 
         // Override default mapping with the server's declared token types
-        if let Some(legend) = result["capabilities"]["semanticTokensProvider"]["legend"].as_object() {
-            if let Some(types) = legend["tokenTypes"].as_array() {
-                let mut m = Self::default_normalized_map();
-                for (i, v) in types.iter().enumerate() {
-                    if let Some(name) = v.as_str() {
-                        let lower = name.to_lowercase();
-                        // Keep the default mapping but also allow exact index lookup
-                        if !m.contains_key(&lower) {
-                            m.insert(lower.clone(), NORM_NORMAL);
-                        }
-                        // Store index-based lookup as well
-                        m.insert(format!("__idx_{}", i), m.get(&lower).copied().unwrap_or(NORM_NORMAL));
+        if let Some(legend) = result["capabilities"]["semanticTokensProvider"]["legend"].as_object()
+            && let Some(types) = legend["tokenTypes"].as_array()
+        {
+            let mut m = Self::default_normalized_map();
+            for (i, v) in types.iter().enumerate() {
+                if let Some(name) = v.as_str() {
+                    let lower = name.to_lowercase();
+                    // Keep the default mapping but also allow exact index lookup
+                    if !m.contains_key(&lower) {
+                        m.insert(lower.clone(), NORM_NORMAL);
                     }
+                    // Store index-based lookup as well
+                    m.insert(
+                        format!("__idx_{}", i),
+                        m.get(&lower).copied().unwrap_or(NORM_NORMAL),
+                    );
                 }
-                self.type_name_to_normalized = m;
             }
+            self.type_name_to_normalized = m;
         }
 
         self.send_notification("initialized", json!({}))?;
@@ -232,7 +243,12 @@ impl LspClient {
 
     /// Open (or update) a virtual document and request semantic tokens.
     /// Returns a list of `LspToken`s with byte-offset positions.
-    pub fn get_tokens(&mut self, text: &str, uri: &str, language_id: &str) -> Result<Vec<LspToken>, String> {
+    pub fn get_tokens(
+        &mut self,
+        text: &str,
+        uri: &str,
+        language_id: &str,
+    ) -> Result<Vec<LspToken>, String> {
         if !self.initialized {
             return Err("LSP client not initialized".to_string());
         }
@@ -281,7 +297,9 @@ impl LspClient {
 
         let mut tokens: Vec<(u32, u32, u32, u32)> = Vec::new();
         for chunk in data.chunks(5) {
-            if chunk.len() < 5 { break; }
+            if chunk.len() < 5 {
+                break;
+            }
             let delta_line = chunk[0].as_u64().unwrap_or(0) as u32;
             let delta_col = chunk[1].as_u64().unwrap_or(0) as u32;
             let length = chunk[2].as_u64().unwrap_or(0) as u32;
@@ -348,9 +366,9 @@ impl LspClient {
             20 => NORM_STRING, // regexp
             16 => NORM_OPERATOR,
             21 => NORM_OPERATOR,
-            22 => NORM_BUILTIN,// decorator
-            11 => NORM_KEYWORD,// modifier
-            9 => NORM_BUILTIN, // macro
+            22 => NORM_BUILTIN,     // decorator
+            11 => NORM_KEYWORD,     // modifier
+            9 => NORM_BUILTIN,      // macro
             4 | 6 => NORM_VARIABLE, // property, enumMember, event
             15 => NORM_KEYWORD,
             _ => NORM_NORMAL,

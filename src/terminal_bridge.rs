@@ -1,6 +1,6 @@
 use std::io::{Read, Write};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(windows)]
 mod win {
@@ -36,7 +36,7 @@ mod win {
     pub fn open_conin() -> isize {
         unsafe {
             CreateFileA(
-                "CONIN$\0".as_ptr(),
+                c"CONIN$".as_ptr() as *const u8,
                 GENERIC_READ,
                 FILE_SHARE_READ | FILE_SHARE_WRITE,
                 std::ptr::null(),
@@ -47,7 +47,11 @@ mod win {
         }
     }
 
-    pub fn read_conin_blocking(handle: isize, buf: &mut [u8], _running: &AtomicBool) -> Option<usize> {
+    pub fn read_conin_blocking(
+        handle: isize,
+        buf: &mut [u8],
+        _running: &AtomicBool,
+    ) -> Option<usize> {
         unsafe {
             let mut bytes_read: u32 = 0;
             let ret = ReadFile(
@@ -75,40 +79,34 @@ pub struct TerminalBridge {
 }
 
 impl TerminalBridge {
-    pub fn start(
-        pty_reader: Box<dyn Read + Send>,
-        mut pty_writer: Box<dyn Write + Send>,
-    ) -> Self {
+    pub fn start(pty_reader: Box<dyn Read + Send>, mut pty_writer: Box<dyn Write + Send>) -> Self {
         let running = Arc::new(AtomicBool::new(true));
 
         let r1 = running.clone();
         let pty_handle = std::thread::spawn(move || {
-            let _result =
-                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    let mut reader = pty_reader;
-                    let mut buf = [0u8; 65536];
-                    let mut stdout = std::io::stdout();
-                    loop {
-                        if !r1.load(Ordering::Relaxed) {
-                            break;
-                        }
-                        match reader.read(&mut buf) {
-                            Ok(0) => break,
-                            Ok(n) => {
-                                if stdout.write_all(&buf[..n]).is_err() {
-                                    break;
-                                }
-                                stdout.flush().ok();
-                            }
-                            Err(ref e)
-                                if e.kind() == std::io::ErrorKind::Interrupted =>
-                            {
-                                continue;
-                            }
-                            Err(_) => break,
-                        }
+            let _result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let mut reader = pty_reader;
+                let mut buf = [0u8; 65536];
+                let mut stdout = std::io::stdout();
+                loop {
+                    if !r1.load(Ordering::Relaxed) {
+                        break;
                     }
-                }));
+                    match reader.read(&mut buf) {
+                        Ok(0) => break,
+                        Ok(n) => {
+                            if stdout.write_all(&buf[..n]).is_err() {
+                                break;
+                            }
+                            stdout.flush().ok();
+                        }
+                        Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => {
+                            continue;
+                        }
+                        Err(_) => break,
+                    }
+                }
+            }));
             r1.store(false, Ordering::Relaxed);
         });
 
@@ -123,62 +121,59 @@ impl TerminalBridge {
             #[cfg(windows)]
             let conin = conin_handle;
             std::thread::spawn(move || {
-                let result =
-                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        #[cfg(windows)]
-                        {
-                            let mut buf = [0u8; 4096];
-                            loop {
-                                if !r2.load(Ordering::Relaxed) {
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    #[cfg(windows)]
+                    {
+                        let mut buf = [0u8; 4096];
+                        loop {
+                            if !r2.load(Ordering::Relaxed) {
+                                break;
+                            }
+                            if conin != -1 {
+                                if let Some(n) = win::read_conin_blocking(conin, &mut buf, &r2) {
+                                    if pty_writer.write_all(&buf[..n]).is_err() {
+                                        break;
+                                    }
+                                    pty_writer.flush().ok();
+                                } else {
                                     break;
                                 }
-                                if conin != -1 {
-                                    if let Some(n) = win::read_conin_blocking(conin, &mut buf, &r2) {
+                            }
+                        }
+                    }
+                    #[cfg(unix)]
+                    {
+                        let mut buf = [0u8; 4096];
+                        use std::os::unix::io::AsRawFd;
+                        loop {
+                            if !r2.load(Ordering::Relaxed) {
+                                break;
+                            }
+                            let fd = std::io::stdin().as_raw_fd();
+                            let mut fds = [libc::pollfd {
+                                fd,
+                                events: libc::POLLIN,
+                                revents: 0,
+                            }];
+                            let ready = unsafe { libc::poll(fds.as_mut_ptr(), 1, 50) > 0 };
+                            if ready {
+                                match std::io::stdin().read(&mut buf) {
+                                    Ok(0) => break,
+                                    Ok(n) => {
                                         if pty_writer.write_all(&buf[..n]).is_err() {
                                             break;
                                         }
                                         pty_writer.flush().ok();
-                                    } else {
-                                        break;
                                     }
+                                    Err(ref e) if e.kind() == std::io::ErrorKind::Interrupted => {
+                                        continue;
+                                    }
+                                    Err(_) => break,
                                 }
                             }
                         }
-                        #[cfg(unix)]
-                        {
-                            let mut buf = [0u8; 4096];
-                            use std::os::unix::io::AsRawFd;
-                            loop {
-                                if !r2.load(Ordering::Relaxed) {
-                                    break;
-                                }
-                                let fd = std::io::stdin().as_raw_fd();
-                                let mut fds = [libc::pollfd {
-                                    fd,
-                                    events: libc::POLLIN,
-                                    revents: 0,
-                                }];
-                                let ready = unsafe { libc::poll(fds.as_mut_ptr(), 1, 50) > 0 };
-                                if ready {
-                                    match std::io::stdin().read(&mut buf) {
-                                        Ok(0) => break,
-                                        Ok(n) => {
-                                            if pty_writer.write_all(&buf[..n]).is_err() {
-                                                break;
-                                            }
-                                            pty_writer.flush().ok();
-                                        }
-                                        Err(ref e)
-                                            if e.kind() == std::io::ErrorKind::Interrupted =>
-                                        {
-                                            continue;
-                                        }
-                                        Err(_) => break,
-                                    }
-                                }
-                            }
-                        }
-                    }));
+                    }
+                }));
                 if result.is_err() {
                     r2.store(false, Ordering::Relaxed);
                 }
@@ -209,7 +204,9 @@ impl Drop for TerminalBridge {
         // Cancel pending I/O on CONIN$ so the stdin thread can wake up
         #[cfg(windows)]
         if self.conin_handle != -1 {
-            unsafe { win::CancelIoEx(self.conin_handle, std::ptr::null()); }
+            unsafe {
+                win::CancelIoEx(self.conin_handle, std::ptr::null());
+            }
         }
         // Join threads first (they should exit after I/O cancellation)
         if let Some(handle) = self.pty_handle.take() {
@@ -221,7 +218,9 @@ impl Drop for TerminalBridge {
         // Close CONIN$ handle only after thread has exited
         #[cfg(windows)]
         if self.conin_handle != -1 {
-            unsafe { win::CloseHandle(self.conin_handle); }
+            unsafe {
+                win::CloseHandle(self.conin_handle);
+            }
         }
     }
 }

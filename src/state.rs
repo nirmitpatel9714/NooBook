@@ -18,7 +18,15 @@ impl SharedState {
             store: Arc::new(Mutex::new(Map::new())),
         }
     }
+}
 
+impl Default for SharedState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SharedState {
     /// Insert or overwrite a variable by key.
     pub fn set(&self, key: &str, value: Value) {
         let mut store = self.store.lock().unwrap();

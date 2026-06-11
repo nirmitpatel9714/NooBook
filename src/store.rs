@@ -9,7 +9,13 @@ fn data_dir() -> PathBuf {
         .or_else(|_| std::env::var("HOME"))
         .unwrap_or_else(|_| ".".to_string());
     let dir = PathBuf::from(base).join("nooshell");
-    let _ = fs::create_dir_all(&dir);
+    if let Err(e) = fs::create_dir_all(&dir) {
+        eprintln!(
+            "Warning: Failed to create data directory at {}: {}",
+            dir.display(),
+            e
+        );
+    }
     dir
 }
 

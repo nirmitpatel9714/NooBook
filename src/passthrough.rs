@@ -40,7 +40,11 @@ pub fn run_passthrough(config: &PassThroughConfig) -> Result<(), Box<dyn std::er
         )
     })?;
 
-    eprint!("\r\n[noo passthrough] starting {} at {}\r\n", shell.display_name, shell.path.display());
+    eprint!(
+        "\r\n[noo passthrough] starting {} at {}\r\n",
+        shell.display_name,
+        shell.path.display()
+    );
 
     let (cols, rows, _pixel_w, _pixel_h) = get_terminal_size()?;
 
@@ -76,12 +80,12 @@ pub fn run_passthrough(config: &PassThroughConfig) -> Result<(), Box<dyn std::er
             break;
         }
 
-        if let Ok((new_cols, new_rows, _new_pw, _new_ph)) = get_terminal_size() {
-            if new_cols != last_cols || new_rows != last_rows {
-                last_cols = new_cols;
-                last_rows = new_rows;
-                let _ = session.resize(new_cols, new_rows);
-            }
+        if let Ok((new_cols, new_rows, _new_pw, _new_ph)) = get_terminal_size()
+            && (new_cols != last_cols || new_rows != last_rows)
+        {
+            last_cols = new_cols;
+            last_rows = new_rows;
+            let _ = session.resize(new_cols, new_rows);
         }
 
         std::thread::sleep(Duration::from_millis(50));

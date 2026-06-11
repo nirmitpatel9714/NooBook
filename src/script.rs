@@ -15,13 +15,60 @@ pub struct NsScript {
 
 /// Keywords excluded from variable-name analysis.
 const KEYWORDS: &[&str] = &[
-    "print", "console", "log", "typeof", "undefined", "true", "false", "null",
-    "if", "else", "for", "while", "return", "import", "from", "def", "class",
-    "let", "var", "const", "function", "new", "this", "in", "of", "not", "and", "or",
-    "try", "catch", "finally", "throw", "async", "await", "yield", "global",
-    "require", "module", "exports", "__dirname", "__filename", "process",
-    "Object", "Array", "String", "Number", "Boolean", "JSON", "Math", "Date",
-    "console", "dir", "globals", "builtins",
+    "print",
+    "console",
+    "log",
+    "typeof",
+    "undefined",
+    "true",
+    "false",
+    "null",
+    "if",
+    "else",
+    "for",
+    "while",
+    "return",
+    "import",
+    "from",
+    "def",
+    "class",
+    "let",
+    "var",
+    "const",
+    "function",
+    "new",
+    "this",
+    "in",
+    "of",
+    "not",
+    "and",
+    "or",
+    "try",
+    "catch",
+    "finally",
+    "throw",
+    "async",
+    "await",
+    "yield",
+    "global",
+    "require",
+    "module",
+    "exports",
+    "__dirname",
+    "__filename",
+    "process",
+    "Object",
+    "Array",
+    "String",
+    "Number",
+    "Boolean",
+    "JSON",
+    "Math",
+    "Date",
+    "console",
+    "dir",
+    "globals",
+    "builtins",
 ];
 
 fn is_keyword(s: &str) -> bool {
@@ -72,14 +119,18 @@ fn extract_assignments(code: &str) -> Vec<String> {
             i += 1;
             continue;
         }
-        if ch == '=' && i > 0 && bytes[i - 1] as char != '=' && i + 1 < len && bytes[i + 1] as char != '=' {
+        if ch == '='
+            && i > 0
+            && bytes[i - 1] as char != '='
+            && i + 1 < len
+            && bytes[i + 1] as char != '='
+        {
             let mut j = i.saturating_sub(1);
             while j > 0 && (bytes[j - 1] as char).is_whitespace() {
                 j -= 1;
             }
             let start = j;
-            while j > 0
-                && ((bytes[j - 1] as char).is_alphanumeric() || bytes[j - 1] as char == '_')
+            while j > 0 && ((bytes[j - 1] as char).is_alphanumeric() || bytes[j - 1] as char == '_')
             {
                 j -= 1;
             }
@@ -161,11 +212,11 @@ pub fn compute_cleanup_schedule(lines: &[(Option<String>, String)]) -> Vec<(usiz
     let mut deduped: Vec<(usize, Vec<String>)> = Vec::new();
     for (line, cmd) in cleanup {
         let var = cmd[4..].to_string();
-        if let Some(last) = deduped.last_mut() {
-            if last.0 == line {
-                last.1.push(var);
-                continue;
-            }
+        if let Some(last) = deduped.last_mut()
+            && last.0 == line
+        {
+            last.1.push(var);
+            continue;
         }
         deduped.push((line, vec![var]));
     }
@@ -229,9 +280,8 @@ impl NsScript {
         languages_json: &str,
         cleanup: &[(usize, String)],
     ) {
-        let config = std::sync::Arc::new(
-            crate::config::load_from_str(languages_json).unwrap_or_default(),
-        );
+        let config =
+            std::sync::Arc::new(crate::config::load_from_str(languages_json).unwrap_or_default());
         let script = match NsScript::from_string(content, config.as_ref()) {
             Ok(s) => s,
             Err(e) => {
@@ -242,10 +292,7 @@ impl NsScript {
 
         let mut cleanup_map: HashMap<usize, Vec<String>> = HashMap::new();
         for (line_idx, cmd) in cleanup {
-            cleanup_map
-                .entry(*line_idx)
-                .or_default()
-                .push(cmd.clone());
+            cleanup_map.entry(*line_idx).or_default().push(cmd.clone());
         }
 
         let state = crate::state::SharedState::new();
@@ -303,9 +350,7 @@ impl NsScript {
                         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
                         while let Ok(line) = rx.try_recv() {
                             let trimmed = line.trim_start_matches('>').trim_start();
-                            if let Some(rest) =
-                                trimmed.strip_prefix(crate::bridge::STATE_PREFIX)
-                            {
+                            if let Some(rest) = trimmed.strip_prefix(crate::bridge::STATE_PREFIX) {
                                 state.import_json(rest);
                             } else if !line.is_empty() {
                                 println!("{}", line);

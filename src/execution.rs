@@ -1,9 +1,9 @@
+use crate::config::LanguageConfig;
 use std::path::PathBuf;
 use std::process::Stdio;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::mpsc;
-use crate::config::LanguageConfig;
 
 /// Temp file path set as `NOO_STATE_FILE` on every REPL subprocess.
 /// Currently reserved for future use by language-specific state dump scripts.
@@ -34,7 +34,10 @@ impl ProcessSession {
     ) -> std::io::Result<Self> {
         let mut cmd = Command::new(&config.cmd);
         cmd.args(&config.args)
-            .env("NOO_STATE_FILE", state_file_path().to_string_lossy().to_string())
+            .env(
+                "NOO_STATE_FILE",
+                state_file_path().to_string_lossy().to_string(),
+            )
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());

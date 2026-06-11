@@ -27,7 +27,12 @@ impl Workspace {
     }
 
     /// Create a new workspace with a single REPL pane for the given language.
-    pub fn with_language(name: String, config: &ConfigMap, language: &str, state: SharedState) -> Self {
+    pub fn with_language(
+        name: String,
+        config: &ConfigMap,
+        language: &str,
+        state: SharedState,
+    ) -> Self {
         let mut pane = Pane::new(0, language.to_string(), state, config.clone());
         let _ = pane.start_session(config);
         Self {
@@ -88,7 +93,11 @@ impl Workspace {
 
     /// Return the index of an existing pane for `language`, or create one.
     pub fn ensure_pane(&mut self, language: &str, config: &ConfigMap, state: SharedState) -> usize {
-        if let Some(pos) = self.panes.iter().position(|p| p.active_language == language) {
+        if let Some(pos) = self
+            .panes
+            .iter()
+            .position(|p| p.active_language == language)
+        {
             return pos;
         }
         let id = self.panes.len();
@@ -138,10 +147,15 @@ impl App {
     }
 
     /// Create a new app with a `noorc`-specified default language and aliases.
-    pub fn with_noorc(config: ConfigMap, language: Option<&str>, aliases: HashMap<String, String>) -> Self {
+    pub fn with_noorc(
+        config: ConfigMap,
+        language: Option<&str>,
+        aliases: HashMap<String, String>,
+    ) -> Self {
         let lang = language.unwrap_or("auto");
         let state = SharedState::new();
-        let mut workspace = Workspace::with_language("Workspace 1".to_string(), &config, lang, state.clone());
+        let mut workspace =
+            Workspace::with_language("Workspace 1".to_string(), &config, lang, state.clone());
         workspace.panes[0].aliases = aliases;
         Self {
             workspaces: vec![workspace],
@@ -329,10 +343,11 @@ impl App {
         };
 
         // Check if cache is still valid
-        if let Some((_, ref cached_text, ref cached_lang)) = self.lsp_cache {
-            if cached_text == &text && cached_lang == &lang {
-                return true;
-            }
+        if let Some((_, ref cached_text, ref cached_lang)) = self.lsp_cache
+            && cached_text == &text
+            && cached_lang == &lang
+        {
+            return true;
         }
 
         let lsp_cfg = match self.config.get(&lang).and_then(|c| c.lsp.clone()) {
@@ -345,11 +360,19 @@ impl App {
             None => return false,
         };
 
-        let uri = format!("noo:///document.{}", if lang == "cpp" || lang == "cxx" { "cpp" } else { &lang });
+        let uri = format!(
+            "noo:///document.{}",
+            if lang == "cpp" || lang == "cxx" {
+                "cpp"
+            } else {
+                &lang
+            }
+        );
 
         match client.get_tokens(&text, &uri, &lsp_cfg.language_id) {
             Ok(tokens) => {
-                let filtered: Vec<LspToken> = tokens.into_iter()
+                let filtered: Vec<LspToken> = tokens
+                    .into_iter()
                     .filter(|t| t.token_type != crate::lsp::NORM_NORMAL)
                     .collect();
                 self.lsp_cache = Some((filtered, text, lang));
@@ -371,22 +394,30 @@ impl App {
     ///
     /// Serializes all workspaces, panes, history, and cursor positions to JSON.
     pub fn save_session(&self, key: &str) {
-        let workspaces: Vec<store::SavedWorkspace> = self.workspaces.iter().map(|ws| {
-            let cells = ws.panes.iter().map(|p| store::SavedCell {
-                name: p.name.clone(),
-                active_language: p.active_language.clone(),
-                history: p.history.clone(),
-                execution_count: p.execution_count,
-                output_lines: p.output_lines.clone(),
-                input_buffer: p.input_buffer.clone(),
-                cursor_pos: p.cursor_pos,
-            }).collect();
-            store::SavedWorkspace {
-                name: ws.name.clone(),
-                active_pane: ws.active_pane,
-                cells,
-            }
-        }).collect();
+        let workspaces: Vec<store::SavedWorkspace> = self
+            .workspaces
+            .iter()
+            .map(|ws| {
+                let cells = ws
+                    .panes
+                    .iter()
+                    .map(|p| store::SavedCell {
+                        name: p.name.clone(),
+                        active_language: p.active_language.clone(),
+                        history: p.history.clone(),
+                        execution_count: p.execution_count,
+                        output_lines: p.output_lines.clone(),
+                        input_buffer: p.input_buffer.clone(),
+                        cursor_pos: p.cursor_pos,
+                    })
+                    .collect();
+                store::SavedWorkspace {
+                    name: ws.name.clone(),
+                    active_pane: ws.active_pane,
+                    cells,
+                }
+            })
+            .collect();
 
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -407,7 +438,10 @@ impl App {
     /// Load saved workspace data from a session key.
     pub fn load_workspaces_from_session(key: &str) -> Option<Vec<store::SavedWorkspace>> {
         let sessions = store::list_sessions();
-        sessions.into_iter().find(|s| s.id == key).map(|s| s.workspaces)
+        sessions
+            .into_iter()
+            .find(|s| s.id == key)
+            .map(|s| s.workspaces)
     }
 
     /// Autosave the current state under the `_autosave` key.
@@ -433,30 +467,45 @@ impl App {
             None => return false,
         };
 
-        self.workspaces = saved_workspaces.into_iter().map(|saved_ws| {
-            let panes: Vec<Pane> = saved_ws.cells.iter().enumerate().map(|(i, c)| {
-                let mut pane = Pane::new(i, c.active_language.clone(), self.state.clone(), self.config.clone());
-                pane.name = c.name.clone();
-                pane.history = c.history.clone();
-                pane.history_index = c.history.len();
-                pane.execution_count = c.execution_count;
-                pane.output_lines = c.output_lines.clone();
-                pane.input_buffer = c.input_buffer.clone();
-                pane.cursor_pos = c.cursor_pos;
-                pane.aliases = self.workspaces.first()
-                    .and_then(|ws| ws.panes.first())
-                    .map(|p| p.aliases.clone())
-                    .unwrap_or_default();
-                let _ = pane.start_session(&self.config);
-                pane
-            }).collect();
+        self.workspaces = saved_workspaces
+            .into_iter()
+            .map(|saved_ws| {
+                let panes: Vec<Pane> = saved_ws
+                    .cells
+                    .iter()
+                    .enumerate()
+                    .map(|(i, c)| {
+                        let mut pane = Pane::new(
+                            i,
+                            c.active_language.clone(),
+                            self.state.clone(),
+                            self.config.clone(),
+                        );
+                        pane.name = c.name.clone();
+                        pane.history = c.history.clone();
+                        pane.history_index = c.history.len();
+                        pane.execution_count = c.execution_count;
+                        pane.output_lines = c.output_lines.clone();
+                        pane.input_buffer = c.input_buffer.clone();
+                        pane.cursor_pos = c.cursor_pos;
+                        pane.aliases = self
+                            .workspaces
+                            .first()
+                            .and_then(|ws| ws.panes.first())
+                            .map(|p| p.aliases.clone())
+                            .unwrap_or_default();
+                        let _ = pane.start_session(&self.config);
+                        pane
+                    })
+                    .collect();
 
-            Workspace {
-                name: saved_ws.name.clone(),
-                panes,
-                active_pane: saved_ws.active_pane,
-            }
-        }).collect();
+                Workspace {
+                    name: saved_ws.name.clone(),
+                    panes,
+                    active_pane: saved_ws.active_pane,
+                }
+            })
+            .collect();
 
         self.active_workspace = 0;
         true

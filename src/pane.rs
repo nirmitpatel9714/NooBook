@@ -23,7 +23,12 @@ fn is_banner_line(line: &str) -> bool {
 /// Check if a line is a bare REPL prompt (no user output) that should be hidden.
 fn is_prompt_noise(line: &str) -> bool {
     let t = line.trim();
-    t == ">>>" || t == "..." || t == ">" || t.starts_with(">>> ") || t.starts_with("... ") || t.starts_with("> ")
+    t == ">>>"
+        || t == "..."
+        || t == ">"
+        || t.starts_with(">>> ")
+        || t.starts_with("... ")
+        || t.starts_with("> ")
 }
 
 /// Detect the most likely language for a command using keyword heuristics.
@@ -50,19 +55,40 @@ fn detect_language(input: &str) -> Result<String, Vec<String>> {
     if trimmed.starts_with("def ") || trimmed.starts_with("class ") {
         score!("py", 3);
     }
-    if trimmed.starts_with("elif ") || trimmed.starts_with("else:") || trimmed.starts_with("except:") || trimmed.starts_with("except ") {
+    if trimmed.starts_with("elif ")
+        || trimmed.starts_with("else:")
+        || trimmed.starts_with("except:")
+        || trimmed.starts_with("except ")
+    {
         score!("py", 3);
     }
-    if trimmed.starts_with("return ") || trimmed.starts_with("yield ") || trimmed.starts_with("raise ") || trimmed.starts_with("assert ") || trimmed.starts_with("pass") || trimmed.starts_with("break") || trimmed.starts_with("continue") {
+    if trimmed.starts_with("return ")
+        || trimmed.starts_with("yield ")
+        || trimmed.starts_with("raise ")
+        || trimmed.starts_with("assert ")
+        || trimmed.starts_with("pass")
+        || trimmed.starts_with("break")
+        || trimmed.starts_with("continue")
+    {
         score!("py", 3);
     }
-    if trimmed.starts_with("with ") || trimmed.starts_with("try:") || trimmed.starts_with("try ") || trimmed.starts_with("finally:") {
+    if trimmed.starts_with("with ")
+        || trimmed.starts_with("try:")
+        || trimmed.starts_with("try ")
+        || trimmed.starts_with("finally:")
+    {
         score!("py", 3);
     }
     if trimmed.starts_with("lambda ") || trimmed.starts_with("del ") {
         score!("py", 3);
     }
-    if trimmed.contains("globals()") || trimmed.contains("locals()") || trimmed.contains("exec(") || trimmed.contains("eval(") || trimmed.contains("__name__") || trimmed.contains("__main__") {
+    if trimmed.contains("globals()")
+        || trimmed.contains("locals()")
+        || trimmed.contains("exec(")
+        || trimmed.contains("eval(")
+        || trimmed.contains("__name__")
+        || trimmed.contains("__main__")
+    {
         score!("py", 3);
     }
     if trimmed.starts_with("@") {
@@ -79,13 +105,22 @@ fn detect_language(input: &str) -> Result<String, Vec<String>> {
     if trimmed.starts_with("var ") || trimmed.starts_with("let ") || trimmed.starts_with("const ") {
         score!("js", 3);
     }
-    if trimmed.starts_with("function ") || trimmed.starts_with("async ") || trimmed.starts_with("await ") {
+    if trimmed.starts_with("function ")
+        || trimmed.starts_with("async ")
+        || trimmed.starts_with("await ")
+    {
         score!("js", 3);
     }
-    if trimmed.starts_with("typeof ") || trimmed.starts_with("instanceof ") || trimmed.starts_with("delete ") {
+    if trimmed.starts_with("typeof ")
+        || trimmed.starts_with("instanceof ")
+        || trimmed.starts_with("delete ")
+    {
         score!("js", 3);
     }
-    if trimmed.starts_with("require(") || trimmed.starts_with("setTimeout(") || trimmed.starts_with("setInterval(") {
+    if trimmed.starts_with("require(")
+        || trimmed.starts_with("setTimeout(")
+        || trimmed.starts_with("setInterval(")
+    {
         score!("js", 3);
     }
     if trimmed.starts_with("throw ") {
@@ -100,41 +135,81 @@ fn detect_language(input: &str) -> Result<String, Vec<String>> {
     if trimmed.contains("this.") || trimmed.contains("global.") {
         score!("js", 2);
     }
-    if trimmed.contains("process.") || trimmed.contains("module.") || trimmed.contains("exports.") || trimmed.contains("require(") {
+    if trimmed.contains("process.")
+        || trimmed.contains("module.")
+        || trimmed.contains("exports.")
+        || trimmed.contains("require(")
+    {
         score!("js", 3);
     }
-    if trimmed.contains("Array.") || trimmed.contains("Object.") || trimmed.contains("JSON.") || trimmed.contains("Math.") || trimmed.contains("Date.") || trimmed.contains("Promise") {
+    if trimmed.contains("Array.")
+        || trimmed.contains("Object.")
+        || trimmed.contains("JSON.")
+        || trimmed.contains("Math.")
+        || trimmed.contains("Date.")
+        || trimmed.contains("Promise")
+    {
         score!("js", 1);
     }
 
     // ── PowerShell high-confidence patterns ──
-    if trimmed.starts_with("Write-") || trimmed.starts_with("Get-") || trimmed.starts_with("Set-")
-        || trimmed.starts_with("New-") || trimmed.starts_with("Remove-") || trimmed.starts_with("Start-")
-        || trimmed.starts_with("Stop-") || trimmed.starts_with("Restart-") || trimmed.starts_with("Format-")
-        || trimmed.starts_with("Out-") || trimmed.starts_with("Import-") || trimmed.starts_with("Export-")
+    if trimmed.starts_with("Write-")
+        || trimmed.starts_with("Get-")
+        || trimmed.starts_with("Set-")
+        || trimmed.starts_with("New-")
+        || trimmed.starts_with("Remove-")
+        || trimmed.starts_with("Start-")
+        || trimmed.starts_with("Stop-")
+        || trimmed.starts_with("Restart-")
+        || trimmed.starts_with("Format-")
+        || trimmed.starts_with("Out-")
+        || trimmed.starts_with("Import-")
+        || trimmed.starts_with("Export-")
     {
         score!("ps", 3);
     }
-    if trimmed.contains("Where-Object") || trimmed.contains("Select-Object") || trimmed.contains("ForEach-Object") || trimmed.contains("Sort-Object") || trimmed.contains("Group-Object") {
+    if trimmed.contains("Where-Object")
+        || trimmed.contains("Select-Object")
+        || trimmed.contains("ForEach-Object")
+        || trimmed.contains("Sort-Object")
+        || trimmed.contains("Group-Object")
+    {
         score!("ps", 3);
     }
-    if trimmed.contains("$_") || trimmed.contains("$?") || trimmed.contains("$args") || trimmed.contains("$PS") {
+    if trimmed.contains("$_")
+        || trimmed.contains("$?")
+        || trimmed.contains("$args")
+        || trimmed.contains("$PS")
+    {
         score!("ps", 3);
     }
     if trimmed.contains("$true") || trimmed.contains("$false") || trimmed.contains("$null") {
         score!("ps", 3);
     }
-    if trimmed.contains(" -eq ") || trimmed.contains(" -ne ") || trimmed.contains(" -gt ")
-        || trimmed.contains(" -lt ") || trimmed.contains(" -ge ") || trimmed.contains(" -le ")
-        || trimmed.contains(" -like ") || trimmed.contains(" -notlike ") || trimmed.contains(" -match ")
-        || trimmed.contains(" -notmatch ") || trimmed.contains(" -contains ") || trimmed.contains(" -notcontains ")
+    if trimmed.contains(" -eq ")
+        || trimmed.contains(" -ne ")
+        || trimmed.contains(" -gt ")
+        || trimmed.contains(" -lt ")
+        || trimmed.contains(" -ge ")
+        || trimmed.contains(" -le ")
+        || trimmed.contains(" -like ")
+        || trimmed.contains(" -notlike ")
+        || trimmed.contains(" -match ")
+        || trimmed.contains(" -notmatch ")
+        || trimmed.contains(" -contains ")
+        || trimmed.contains(" -notcontains ")
     {
         score!("ps", 3);
     }
     if trimmed.contains(" -is ") || trimmed.contains(" -isnot ") || trimmed.contains(" -as ") {
         score!("ps", 2);
     }
-    if trimmed.contains("|") && (trimmed.contains("Where") || trimmed.contains("Select") || trimmed.contains("ForEach") || trimmed.contains("Sort")) {
+    if trimmed.contains("|")
+        && (trimmed.contains("Where")
+            || trimmed.contains("Select")
+            || trimmed.contains("ForEach")
+            || trimmed.contains("Sort"))
+    {
         score!("ps", 1);
     }
 
@@ -200,7 +275,12 @@ impl Pane {
     /// Create a new pane with the given ID and default language.
     ///
     /// The session is not started until [`start_session`](Self::start_session) is called.
-    pub fn new(id: usize, default_language: String, state: SharedState, config_map: ConfigMap) -> Self {
+    pub fn new(
+        id: usize,
+        default_language: String,
+        state: SharedState,
+        config_map: ConfigMap,
+    ) -> Self {
         let (output_sender, output_receiver) = mpsc::channel(100);
         Self {
             id,
@@ -285,10 +365,10 @@ impl Pane {
                 return None;
             }
             "cd" => {
-                if parts.len() > 1 {
-                    if let Err(e) = env::set_current_dir(parts[1]) {
-                        self.output_lines.push(format!("cd error: {}", e));
-                    }
+                if parts.len() > 1
+                    && let Err(e) = env::set_current_dir(parts[1])
+                {
+                    self.output_lines.push(format!("cd error: {}", e));
                 }
                 return None;
             }
@@ -364,10 +444,14 @@ impl Pane {
                                     Ok(line) => {
                                         idle = 0;
                                         let trimmed = line.trim_start_matches('>').trim_start();
-                                        if let Some(rest) = trimmed.strip_prefix(bridge::STATE_PREFIX) {
+                                        if let Some(rest) =
+                                            trimmed.strip_prefix(bridge::STATE_PREFIX)
+                                        {
                                             self.state.import_json(rest);
-                                        } else if !is_banner_line(&line) && !is_prompt_noise(&line) {
-                                            let is_echo = Some(line.as_str()) == inj_code.as_deref()
+                                        } else if !is_banner_line(&line) && !is_prompt_noise(&line)
+                                        {
+                                            let is_echo = Some(line.as_str())
+                                                == inj_code.as_deref()
                                                 || line == input
                                                 || Some(line.as_str()) == dump_code.as_deref();
                                             if !is_echo {

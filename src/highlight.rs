@@ -1,8 +1,8 @@
-use std::collections::HashSet;
-use std::sync::LazyLock;
+use crate::lsp::LspToken;
 use ratatui::style::{Color, Style};
 use ratatui::text::Span;
-use crate::lsp::LspToken;
+use std::collections::HashSet;
+use std::sync::LazyLock;
 
 // ── Token kinds ──
 
@@ -48,60 +48,206 @@ macro_rules! str_set {
 
 static PY_KEYWORDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
     str_set![
-        "False", "None", "True", "and", "as", "assert", "async", "await",
-        "break", "class", "continue", "def", "del", "elif", "else", "except",
-        "finally", "for", "from", "global", "if", "import", "in", "is",
-        "lambda", "nonlocal", "not", "or", "pass", "raise", "return",
+        "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class",
+        "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global",
+        "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return",
         "try", "while", "with", "yield",
     ]
 });
 
 static PY_BUILTINS: LazyLock<HashSet<String>> = LazyLock::new(|| {
     str_set![
-        "abs", "all", "any", "bin", "bool", "bytearray", "bytes", "chr",
-        "complex", "dict", "dir", "divmod", "enumerate", "eval", "exec",
-        "filter", "float", "format", "frozenset", "getattr", "globals",
-        "hasattr", "hash", "help", "hex", "id", "input", "int", "isinstance",
-        "issubclass", "iter", "len", "list", "locals", "map", "max",
-        "memoryview", "min", "next", "object", "oct", "open", "ord", "pow",
-        "print", "property", "range", "repr", "reversed", "round", "set",
-        "setattr", "slice", "sorted", "staticmethod", "str", "sum", "super",
-        "tuple", "type", "vars", "zip", "__import__",
+        "abs",
+        "all",
+        "any",
+        "bin",
+        "bool",
+        "bytearray",
+        "bytes",
+        "chr",
+        "complex",
+        "dict",
+        "dir",
+        "divmod",
+        "enumerate",
+        "eval",
+        "exec",
+        "filter",
+        "float",
+        "format",
+        "frozenset",
+        "getattr",
+        "globals",
+        "hasattr",
+        "hash",
+        "help",
+        "hex",
+        "id",
+        "input",
+        "int",
+        "isinstance",
+        "issubclass",
+        "iter",
+        "len",
+        "list",
+        "locals",
+        "map",
+        "max",
+        "memoryview",
+        "min",
+        "next",
+        "object",
+        "oct",
+        "open",
+        "ord",
+        "pow",
+        "print",
+        "property",
+        "range",
+        "repr",
+        "reversed",
+        "round",
+        "set",
+        "setattr",
+        "slice",
+        "sorted",
+        "staticmethod",
+        "str",
+        "sum",
+        "super",
+        "tuple",
+        "type",
+        "vars",
+        "zip",
+        "__import__",
     ]
 });
 
 static JS_KEYWORDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
     str_set![
-        "async", "await", "break", "case", "catch", "class", "const",
-        "continue", "debugger", "default", "delete", "do", "else", "enum",
-        "export", "extends", "false", "finally", "for", "function", "if",
-        "import", "in", "instanceof", "let", "new", "null", "of", "return",
-        "super", "switch", "this", "throw", "true", "try", "typeof", "var",
-        "void", "while", "with", "yield",
+        "async",
+        "await",
+        "break",
+        "case",
+        "catch",
+        "class",
+        "const",
+        "continue",
+        "debugger",
+        "default",
+        "delete",
+        "do",
+        "else",
+        "enum",
+        "export",
+        "extends",
+        "false",
+        "finally",
+        "for",
+        "function",
+        "if",
+        "import",
+        "in",
+        "instanceof",
+        "let",
+        "new",
+        "null",
+        "of",
+        "return",
+        "super",
+        "switch",
+        "this",
+        "throw",
+        "true",
+        "try",
+        "typeof",
+        "var",
+        "void",
+        "while",
+        "with",
+        "yield",
     ]
 });
 
 static JS_BUILTINS: LazyLock<HashSet<String>> = LazyLock::new(|| {
     str_set![
-        "Array", "Boolean", "Date", "Error", "Function", "Infinity", "JSON",
-        "Math", "NaN", "Number", "Object", "Promise", "RangeError",
-        "ReferenceError", "RegExp", "String", "SyntaxError", "TypeError",
-        "URIError", "console", "decodeURI", "decodeURIComponent", "encodeURI",
-        "encodeURIComponent", "escape", "eval", "global", "isFinite", "isNaN",
-        "parseFloat", "parseInt", "undefined", "unescape", "process",
-        "require", "module", "exports", "setTimeout", "setInterval",
-        "clearTimeout", "clearInterval",
+        "Array",
+        "Boolean",
+        "Date",
+        "Error",
+        "Function",
+        "Infinity",
+        "JSON",
+        "Math",
+        "NaN",
+        "Number",
+        "Object",
+        "Promise",
+        "RangeError",
+        "ReferenceError",
+        "RegExp",
+        "String",
+        "SyntaxError",
+        "TypeError",
+        "URIError",
+        "console",
+        "decodeURI",
+        "decodeURIComponent",
+        "encodeURI",
+        "encodeURIComponent",
+        "escape",
+        "eval",
+        "global",
+        "isFinite",
+        "isNaN",
+        "parseFloat",
+        "parseInt",
+        "undefined",
+        "unescape",
+        "process",
+        "require",
+        "module",
+        "exports",
+        "setTimeout",
+        "setInterval",
+        "clearTimeout",
+        "clearInterval",
     ]
 });
 
 static PS_KEYWORDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
     let mut s = HashSet::new();
     for w in [
-        "begin", "break", "catch", "continue", "data", "do", "dynamicparam",
-        "else", "elseif", "end", "exit", "filter", "finally", "for",
-        "foreach", "from", "function", "if", "in", "param", "process",
-        "return", "switch", "throw", "trap", "try", "until", "using",
-        "var", "while",
+        "begin",
+        "break",
+        "catch",
+        "continue",
+        "data",
+        "do",
+        "dynamicparam",
+        "else",
+        "elseif",
+        "end",
+        "exit",
+        "filter",
+        "finally",
+        "for",
+        "foreach",
+        "from",
+        "function",
+        "if",
+        "in",
+        "param",
+        "process",
+        "return",
+        "switch",
+        "throw",
+        "trap",
+        "try",
+        "until",
+        "using",
+        "var",
+        "while",
     ] {
         s.insert(w.to_string());
     }
@@ -114,23 +260,66 @@ static PS_KEYWORDS: LazyLock<HashSet<String>> = LazyLock::new(|| {
 static PS_BUILTINS: LazyLock<HashSet<String>> = LazyLock::new(|| {
     let mut s = HashSet::new();
     for w in [
-        "Write-Host", "Write-Output", "Write-Error", "Write-Warning",
-        "Write-Verbose", "Write-Debug", "Write-Progress",
-        "Get-ChildItem", "Get-Content", "Get-Process", "Get-Service",
-        "Get-Command", "Get-Help", "Get-Member", "Get-Item", "Get-Location",
-        "Get-Date", "Get-Variable", "Get-ItemProperty",
-        "Set-Location", "Set-Content", "Set-Item", "Set-Variable",
-        "Add-Content", "New-Item", "New-Object", "New-Variable",
-        "Remove-Item", "Remove-Variable", "Copy-Item", "Move-Item",
-        "Rename-Item", "Test-Path", "Join-Path", "Split-Path",
-        "ConvertTo-Json", "ConvertFrom-Json",
-        "Where-Object", "Select-Object", "ForEach-Object", "Sort-Object",
-        "Group-Object", "Measure-Object", "Compare-Object",
-        "Format-Table", "Format-List", "Format-Wide", "Format-Custom",
-        "Out-File", "Out-Null", "Out-String", "Out-Default",
-        "Import-Module", "Export-ModuleMember",
-        "Start-Process", "Stop-Process", "Start-Sleep",
-        "Resolve-Path", "Clear-Host", "Write-Host",
+        "Write-Host",
+        "Write-Output",
+        "Write-Error",
+        "Write-Warning",
+        "Write-Verbose",
+        "Write-Debug",
+        "Write-Progress",
+        "Get-ChildItem",
+        "Get-Content",
+        "Get-Process",
+        "Get-Service",
+        "Get-Command",
+        "Get-Help",
+        "Get-Member",
+        "Get-Item",
+        "Get-Location",
+        "Get-Date",
+        "Get-Variable",
+        "Get-ItemProperty",
+        "Set-Location",
+        "Set-Content",
+        "Set-Item",
+        "Set-Variable",
+        "Add-Content",
+        "New-Item",
+        "New-Object",
+        "New-Variable",
+        "Remove-Item",
+        "Remove-Variable",
+        "Copy-Item",
+        "Move-Item",
+        "Rename-Item",
+        "Test-Path",
+        "Join-Path",
+        "Split-Path",
+        "ConvertTo-Json",
+        "ConvertFrom-Json",
+        "Where-Object",
+        "Select-Object",
+        "ForEach-Object",
+        "Sort-Object",
+        "Group-Object",
+        "Measure-Object",
+        "Compare-Object",
+        "Format-Table",
+        "Format-List",
+        "Format-Wide",
+        "Format-Custom",
+        "Out-File",
+        "Out-Null",
+        "Out-String",
+        "Out-Default",
+        "Import-Module",
+        "Export-ModuleMember",
+        "Start-Process",
+        "Stop-Process",
+        "Start-Sleep",
+        "Resolve-Path",
+        "Clear-Host",
+        "Write-Host",
     ] {
         s.insert(w.to_string());
     }
@@ -194,7 +383,10 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
 
     macro_rules! push {
         ($s:expr, $k:expr) => {
-            tokens.push(Token { text: $s.to_string(), kind: $k })
+            tokens.push(Token {
+                text: $s.to_string(),
+                kind: $k,
+            })
         };
     }
 
@@ -204,7 +396,9 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
             let mut s = String::new();
             s.push(ch);
             while let Some(&c) = chars.peek() {
-                if c == '\n' { break; }
+                if c == '\n' {
+                    break;
+                }
                 s.push(c);
                 chars.next();
             }
@@ -216,7 +410,9 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
             s.push_str("//");
             chars.next();
             while let Some(&c) = chars.peek() {
-                if c == '\n' { break; }
+                if c == '\n' {
+                    break;
+                }
                 s.push(c);
                 chars.next();
             }
@@ -233,7 +429,9 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
                 s.push('{');
                 chars.next();
                 while let Some(&c) = chars.peek() {
-                    if c == '}' { break; }
+                    if c == '}' {
+                        break;
+                    }
                     s.push(c);
                     chars.next();
                 }
@@ -243,8 +441,12 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
                 }
             } else {
                 while let Some(&c) = chars.peek() {
-                    if is_word_char(c) || c == ':' { s.push(c); chars.next(); }
-                    else { break; }
+                    if is_word_char(c) || c == ':' {
+                        s.push(c);
+                        chars.next();
+                    } else {
+                        break;
+                    }
                 }
             }
             if s.len() > 1 {
@@ -264,10 +466,14 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
         if ch == '-' && lang == "ps" {
             let mut s = String::new();
             s.push('-');
-            if chars.peek().map_or(false, |&c| c.is_alphabetic()) {
+            if chars.peek().is_some_and(|&c| c.is_alphabetic()) {
                 while let Some(&c) = chars.peek() {
-                    if is_word_char(c) || c == ':' { s.push(c); chars.next(); }
-                    else { break; }
+                    if is_word_char(c) || c == ':' {
+                        s.push(c);
+                        chars.next();
+                    } else {
+                        break;
+                    }
                 }
             }
             push!(s, TokenKind::Normal);
@@ -279,17 +485,21 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
             let mut s = String::new();
             s.push('\'');
             // Check triple single quotes (Python)
-            let triple = lang == "py"
-                && chars.peek() == Some(&'\'')
-                && chars.clone().nth(1) == Some('\'');
+            let triple =
+                lang == "py" && chars.peek() == Some(&'\'') && chars.clone().nth(1) == Some('\'');
             if triple {
                 s.push_str("''");
-                chars.next(); chars.next();
+                chars.next();
+                chars.next();
                 loop {
                     match chars.next() {
-                        Some('\'') if chars.peek() == Some(&'\'') && chars.clone().nth(1) == Some('\'') => {
+                        Some('\'')
+                            if chars.peek() == Some(&'\'')
+                                && chars.clone().nth(1) == Some('\'') =>
+                        {
                             s.push_str("'''");
-                            chars.next(); chars.next();
+                            chars.next();
+                            chars.next();
                             break;
                         }
                         Some(c) => s.push(c),
@@ -299,10 +509,15 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
             } else {
                 loop {
                     match chars.next() {
-                        Some('\'') => { s.push('\''); break; }
+                        Some('\'') => {
+                            s.push('\'');
+                            break;
+                        }
                         Some('\\') => {
                             s.push('\\');
-                            if let Some(esc) = chars.next() { s.push(esc); }
+                            if let Some(esc) = chars.next() {
+                                s.push(esc);
+                            }
                         }
                         Some(c) => s.push(c),
                         None => break,
@@ -317,17 +532,20 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
             let mut s = String::new();
             s.push('"');
             // Check triple double quotes (Python)
-            let triple = lang == "py"
-                && chars.peek() == Some(&'"')
-                && chars.clone().nth(1) == Some('"');
+            let triple =
+                lang == "py" && chars.peek() == Some(&'"') && chars.clone().nth(1) == Some('"');
             if triple {
                 s.push_str("\"\"");
-                chars.next(); chars.next();
+                chars.next();
+                chars.next();
                 loop {
                     match chars.next() {
-                        Some('"') if chars.peek() == Some(&'"') && chars.clone().nth(1) == Some('"') => {
+                        Some('"')
+                            if chars.peek() == Some(&'"') && chars.clone().nth(1) == Some('"') =>
+                        {
                             s.push_str("\"\"\"");
-                            chars.next(); chars.next();
+                            chars.next();
+                            chars.next();
                             break;
                         }
                         Some(c) => s.push(c),
@@ -337,10 +555,15 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
             } else {
                 loop {
                     match chars.next() {
-                        Some('"') => { s.push('"'); break; }
+                        Some('"') => {
+                            s.push('"');
+                            break;
+                        }
                         Some('\\') => {
                             s.push('\\');
-                            if let Some(esc) = chars.next() { s.push(esc); }
+                            if let Some(esc) = chars.next() {
+                                s.push(esc);
+                            }
                         }
                         Some(c) => s.push(c),
                         None => break,
@@ -357,10 +580,15 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
             s.push('`');
             loop {
                 match chars.next() {
-                    Some('`') => { s.push('`'); break; }
+                    Some('`') => {
+                        s.push('`');
+                        break;
+                    }
                     Some('\\') => {
                         s.push('\\');
-                        if let Some(esc) = chars.next() { s.push(esc); }
+                        if let Some(esc) = chars.next() {
+                            s.push(esc);
+                        }
                     }
                     Some(c) => s.push(c),
                     None => break,
@@ -375,22 +603,30 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
             let mut word = String::new();
             word.push(ch);
             while let Some(&c) = chars.peek() {
-                if is_word_char(c) { word.push(c); chars.next(); }
-                else { break; }
+                if is_word_char(c) {
+                    word.push(c);
+                    chars.next();
+                } else {
+                    break;
+                }
             }
             // Check for PowerShell verb-noun pattern
             if lang == "ps" && chars.peek() == Some(&'-') {
                 // Could be a cmdlet like Write-Host
                 let saved = chars.clone();
                 chars.next(); // consume '-'
-                if chars.peek().map_or(false, |&c| c.is_alphabetic()) {
+                if chars.peek().is_some_and(|&c| c.is_alphabetic()) {
                     word.push('-');
                     while let Some(&c) = chars.peek() {
-                        if is_word_char(c) { word.push(c); chars.next(); }
-                        else { break; }
+                        if is_word_char(c) {
+                            word.push(c);
+                            chars.next();
+                        } else {
+                            break;
+                        }
                     }
                     if builtins.contains(word.as_str()) {
-                push!(word, TokenKind::Builtin);
+                        push!(word, TokenKind::Builtin);
                         continue;
                     }
                 } else {
@@ -408,13 +644,23 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
             let mut num = String::new();
             num.push(ch);
             while let Some(&c) = chars.peek() {
-                if c.is_ascii_digit() || c == '.' || c == 'e' || c == 'E'
-                    || c == 'x' || c == 'X' || c == 'o' || c == 'O'
-                    || c == 'b' || c == 'B' || c == '_'
+                if c.is_ascii_digit()
+                    || c == '.'
+                    || c == 'e'
+                    || c == 'E'
+                    || c == 'x'
+                    || c == 'X'
+                    || c == 'o'
+                    || c == 'O'
+                    || c == 'b'
+                    || c == 'B'
+                    || c == '_'
                 {
                     num.push(c);
                     chars.next();
-                } else { break; }
+                } else {
+                    break;
+                }
             }
             push!(num, TokenKind::Number);
             continue;
@@ -427,16 +673,37 @@ fn tokenize(text: &str, lang: &str) -> Vec<Token> {
         let mut op = String::new();
         op.push(ch);
         // Multi-char operators
-        if matches!(ch, '=' | '!' | '<' | '>' | '&' | '|' | '+' | '-' | '*' | '/' | '%' | '^' | '~') {
-            if let Some(&next) = chars.peek() {
-                let pair = format!("{}{}", ch, next);
-                if matches!(pair.as_str(), "==" | "!=" | "<=" | ">=" | "&&" | "||"
-                    | "++" | "--" | "=>" | "+=" | "-=" | "*=" | "/=" | "%="
-                    | "&=" | "|=" | "^=" | "<<" | ">>" | "->" | "::")
-                {
-                    op.push(next);
-                    chars.next();
-                }
+        if matches!(
+            ch,
+            '=' | '!' | '<' | '>' | '&' | '|' | '+' | '-' | '*' | '/' | '%' | '^' | '~'
+        ) && let Some(&next) = chars.peek()
+        {
+            let pair = format!("{}{}", ch, next);
+            if matches!(
+                pair.as_str(),
+                "==" | "!="
+                    | "<="
+                    | ">="
+                    | "&&"
+                    | "||"
+                    | "++"
+                    | "--"
+                    | "=>"
+                    | "+="
+                    | "-="
+                    | "*="
+                    | "/="
+                    | "%="
+                    | "&="
+                    | "|="
+                    | "^="
+                    | "<<"
+                    | ">>"
+                    | "->"
+                    | "::"
+            ) {
+                op.push(next);
+                chars.next();
             }
         }
         push!(op, TokenKind::Normal);
@@ -456,58 +723,99 @@ fn resolve_lang<'a>(text: &'a str, lang: &'a str) -> &'a str {
         return "auto";
     }
     // Python
-    if trimmed.starts_with("print(") || trimmed.starts_with("print ")
-        || trimmed.starts_with("import ") || trimmed.starts_with("from ")
-        || trimmed.starts_with("def ") || trimmed.starts_with("class ")
-        || trimmed.starts_with("elif ") || trimmed.starts_with("else:")
-        || trimmed.starts_with("except") || trimmed.starts_with("finally")
-        || trimmed.starts_with("with ") || trimmed.starts_with("try:")
-        || trimmed.starts_with("return ") || trimmed.starts_with("yield ")
-        || trimmed.starts_with("raise ") || trimmed.starts_with("assert ")
-        || trimmed.starts_with("pass") || trimmed.starts_with("break")
-        || trimmed.starts_with("continue") || trimmed.starts_with("@")
-        || trimmed.starts_with("lambda ") || trimmed.starts_with("del ")
-        || trimmed.starts_with("async ") || trimmed.starts_with("await ")
-        || trimmed.starts_with("global ") || trimmed.starts_with("nonlocal ")
+    if trimmed.starts_with("print(")
+        || trimmed.starts_with("print ")
+        || trimmed.starts_with("import ")
+        || trimmed.starts_with("from ")
+        || trimmed.starts_with("def ")
+        || trimmed.starts_with("class ")
+        || trimmed.starts_with("elif ")
+        || trimmed.starts_with("else:")
+        || trimmed.starts_with("except")
+        || trimmed.starts_with("finally")
+        || trimmed.starts_with("with ")
+        || trimmed.starts_with("try:")
+        || trimmed.starts_with("return ")
+        || trimmed.starts_with("yield ")
+        || trimmed.starts_with("raise ")
+        || trimmed.starts_with("assert ")
+        || trimmed.starts_with("pass")
+        || trimmed.starts_with("break")
+        || trimmed.starts_with("continue")
+        || trimmed.starts_with("@")
+        || trimmed.starts_with("lambda ")
+        || trimmed.starts_with("del ")
+        || trimmed.starts_with("async ")
+        || trimmed.starts_with("await ")
+        || trimmed.starts_with("global ")
+        || trimmed.starts_with("nonlocal ")
     {
         return "py";
     }
     // JavaScript
     if trimmed.starts_with("console.")
-        || trimmed.starts_with("function ") || trimmed.starts_with("const ")
-        || trimmed.starts_with("let ") || trimmed.starts_with("var ")
-        || trimmed.starts_with("typeof ") || trimmed.starts_with("instanceof ")
-        || trimmed.starts_with("require(") || trimmed.starts_with("setTimeout(")
-        || trimmed.starts_with("setInterval(") || trimmed.starts_with("clearTimeout(")
-        || trimmed.starts_with("async ") || trimmed.starts_with("await ")
-        || trimmed.starts_with("throw ") || trimmed.starts_with("delete ")
-        || trimmed.starts_with("export ") || trimmed.starts_with("import ")
-        || trimmed.starts_with("class ") || trimmed.starts_with("new ")
-        || trimmed.starts_with("try ") || trimmed.starts_with("catch ")
-        || trimmed.starts_with("finally ") || trimmed.starts_with("switch ")
-        || trimmed.starts_with("case ") || trimmed.starts_with("default:")
-        || trimmed.starts_with("debugger") || trimmed.starts_with("do ")
+        || trimmed.starts_with("function ")
+        || trimmed.starts_with("const ")
+        || trimmed.starts_with("let ")
+        || trimmed.starts_with("var ")
+        || trimmed.starts_with("typeof ")
+        || trimmed.starts_with("instanceof ")
+        || trimmed.starts_with("require(")
+        || trimmed.starts_with("setTimeout(")
+        || trimmed.starts_with("setInterval(")
+        || trimmed.starts_with("clearTimeout(")
+        || trimmed.starts_with("async ")
+        || trimmed.starts_with("await ")
+        || trimmed.starts_with("throw ")
+        || trimmed.starts_with("delete ")
+        || trimmed.starts_with("export ")
+        || trimmed.starts_with("import ")
+        || trimmed.starts_with("class ")
+        || trimmed.starts_with("new ")
+        || trimmed.starts_with("try ")
+        || trimmed.starts_with("catch ")
+        || trimmed.starts_with("finally ")
+        || trimmed.starts_with("switch ")
+        || trimmed.starts_with("case ")
+        || trimmed.starts_with("default:")
+        || trimmed.starts_with("debugger")
+        || trimmed.starts_with("do ")
         || trimmed.starts_with("typeof(")
     {
         return "js";
     }
     // PowerShell
     if trimmed.starts_with('$')
-        || trimmed.starts_with("Write-") || trimmed.starts_with("Get-")
-        || trimmed.starts_with("Set-") || trimmed.starts_with("New-")
-        || trimmed.starts_with("Remove-") || trimmed.starts_with("Start-")
-        || trimmed.starts_with("Stop-") || trimmed.starts_with("Where-Object")
-        || trimmed.starts_with("ForEach-") || trimmed.starts_with("Format-")
-        || trimmed.starts_with("Out-") || trimmed.starts_with("Import-")
-        || trimmed.starts_with("Export-") || trimmed.starts_with("Add-")
-        || trimmed.starts_with("Copy-") || trimmed.starts_with("Move-")
-        || trimmed.starts_with("Rename-") || trimmed.starts_with("Test-Path")
-        || trimmed.starts_with("ConvertTo-") || trimmed.starts_with("ConvertFrom-")
-        || trimmed.starts_with("Select-Object") || trimmed.starts_with("Sort-Object")
-        || trimmed.starts_with("Group-Object") || trimmed.starts_with("Measure-Object")
-        || trimmed.starts_with("Clear-Host") || trimmed.starts_with("Write-Host")
-        || trimmed.starts_with("Start-Sleep") || trimmed.starts_with("New-Object")
-        || trimmed.starts_with("Write-Output") || trimmed.starts_with("Write-Error")
+        || trimmed.starts_with("Write-")
+        || trimmed.starts_with("Get-")
+        || trimmed.starts_with("Set-")
+        || trimmed.starts_with("New-")
+        || trimmed.starts_with("Remove-")
+        || trimmed.starts_with("Start-")
+        || trimmed.starts_with("Stop-")
+        || trimmed.starts_with("Where-Object")
+        || trimmed.starts_with("ForEach-")
+        || trimmed.starts_with("Format-")
+        || trimmed.starts_with("Out-")
+        || trimmed.starts_with("Import-")
+        || trimmed.starts_with("Export-")
+        || trimmed.starts_with("Add-")
+        || trimmed.starts_with("Copy-")
+        || trimmed.starts_with("Move-")
+        || trimmed.starts_with("Rename-")
+        || trimmed.starts_with("Test-Path")
+        || trimmed.starts_with("ConvertTo-")
+        || trimmed.starts_with("ConvertFrom-")
+        || trimmed.starts_with("Select-Object")
+        || trimmed.starts_with("Sort-Object")
+        || trimmed.starts_with("Group-Object")
+        || trimmed.starts_with("Measure-Object")
+        || trimmed.starts_with("Clear-Host")
+        || trimmed.starts_with("Write-Host")
+        || trimmed.starts_with("Start-Sleep")
+        || trimmed.starts_with("New-Object")
+        || trimmed.starts_with("Write-Output")
+        || trimmed.starts_with("Write-Error")
     {
         return "ps";
     }
@@ -520,15 +828,21 @@ fn resolve_lang<'a>(text: &'a str, lang: &'a str) -> &'a str {
         return "js";
     }
     // Check for PowerShell operators
-    if trimmed.contains(" -eq ") || trimmed.contains(" -ne ")
-        || trimmed.contains(" -gt ") || trimmed.contains(" -lt ")
-        || trimmed.contains(" -ge ") || trimmed.contains(" -le ")
-        || trimmed.contains(" -like ") || trimmed.contains(" -match ")
+    if trimmed.contains(" -eq ")
+        || trimmed.contains(" -ne ")
+        || trimmed.contains(" -gt ")
+        || trimmed.contains(" -lt ")
+        || trimmed.contains(" -ge ")
+        || trimmed.contains(" -le ")
+        || trimmed.contains(" -like ")
+        || trimmed.contains(" -match ")
     {
         return "ps";
     }
     // Try matching the first identifier word against keyword sets
-    let first_word = trimmed.split(|c: char| !c.is_alphanumeric() && c != '_').next()
+    let first_word = trimmed
+        .split(|c: char| !c.is_alphanumeric() && c != '_')
+        .next()
         .unwrap_or("");
     if !first_word.is_empty() {
         if PY_KEYWORDS.contains(first_word) || PY_BUILTINS.contains(first_word) {
@@ -628,7 +942,11 @@ pub fn highlight_ansi(text: &str, lang: &str, cursor: usize) -> (String, String)
 
 /// Split the input text into syntax-highlighted spans at the given cursor
 /// position (byte index). Returns `(before_cursor, after_cursor)` spans.
-pub fn highlight_split(text: &str, lang: &str, cursor: usize) -> (Vec<Span<'static>>, Vec<Span<'static>>) {
+pub fn highlight_split(
+    text: &str,
+    lang: &str,
+    cursor: usize,
+) -> (Vec<Span<'static>>, Vec<Span<'static>>) {
     let resolved = resolve_lang(text, lang);
     let tokens = tokenize(text, resolved);
     let mut before: Vec<Span<'static>> = Vec::new();
@@ -697,7 +1015,12 @@ fn build_lsp_segments(text: &str, lsp_tokens: &[LspToken]) -> Vec<(usize, usize,
 
 /// Apply LSP-based syntax highlighting to text and return ANSI-escaped
 /// (before_cursor, after_cursor) strings.
-pub fn highlight_ansi_lsp(text: &str, _lang: &str, cursor: usize, lsp_tokens: &[LspToken]) -> (String, String) {
+pub fn highlight_ansi_lsp(
+    text: &str,
+    _lang: &str,
+    cursor: usize,
+    lsp_tokens: &[LspToken],
+) -> (String, String) {
     let reset = "\x1b[0m";
     let segments = build_lsp_segments(text, lsp_tokens);
     let mut before = String::new();
@@ -732,7 +1055,12 @@ fn style_text(s: &str, style: Style, reset: &str) -> String {
 
 /// Apply LSP-based syntax highlighting and return `(before_cursor, after_cursor)`
 /// as ratatui `Span` vectors.
-pub fn highlight_split_lsp(text: &str, _lang: &str, cursor: usize, lsp_tokens: &[LspToken]) -> (Vec<Span<'static>>, Vec<Span<'static>>) {
+pub fn highlight_split_lsp(
+    text: &str,
+    _lang: &str,
+    cursor: usize,
+    lsp_tokens: &[LspToken],
+) -> (Vec<Span<'static>>, Vec<Span<'static>>) {
     let segments = build_lsp_segments(text, lsp_tokens);
     let mut before: Vec<Span<'static>> = Vec::new();
     let mut after: Vec<Span<'static>> = Vec::new();
@@ -746,8 +1074,14 @@ pub fn highlight_split_lsp(text: &str, _lang: &str, cursor: usize, lsp_tokens: &
         } else {
             let split_at = cursor - offset;
             if split_at < length && text.is_char_boundary(offset + split_at) {
-                before.push(Span::styled(text[offset..offset + split_at].to_string(), style));
-                after.push(Span::styled(text[offset + split_at..end].to_string(), style));
+                before.push(Span::styled(
+                    text[offset..offset + split_at].to_string(),
+                    style,
+                ));
+                after.push(Span::styled(
+                    text[offset + split_at..end].to_string(),
+                    style,
+                ));
             } else {
                 before.push(Span::styled(text[offset..end].to_string(), style));
             }

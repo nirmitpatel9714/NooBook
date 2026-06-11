@@ -72,7 +72,10 @@ fn hash_script(script_path: &Path) -> io::Result<u64> {
 /// Path to the hash cache file (a dotfile next to the script).
 fn hash_cache_path(script_path: &Path, target_label: &str) -> PathBuf {
     let mut p = script_path.to_path_buf();
-    let name = p.file_name().unwrap().to_string_lossy().to_string();
+    let name = p
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
     p.set_file_name(format!(".{}.{}.hash", name, target_label));
     p
 }
@@ -120,10 +123,11 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
 
     let noo_root = find_crate_root()?;
 
-    let build_root = noo_root
-        .join("target")
-        .join("noo_compile")
-        .join(format!("{}-{}", script_name, target.build_dir_suffix()));
+    let build_root = noo_root.join("target").join("noo_compile").join(format!(
+        "{}-{}",
+        script_name,
+        target.build_dir_suffix()
+    ));
     let src_dir = build_root.join("src");
     fs::create_dir_all(&src_dir)?;
 
@@ -255,7 +259,10 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
 
     #[cfg(windows)]
     {
-        std::process::Command::new("cmd").args(["/c", "cls"]).status().ok();
+        std::process::Command::new("cmd")
+            .args(["/c", "cls"])
+            .status()
+            .ok();
     }
     #[cfg(not(windows))]
     {
@@ -283,7 +290,7 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
 /// Walk up from the executable path to find the crate root (`Cargo.toml`).
 fn find_crate_root() -> io::Result<PathBuf> {
     let exe = std::env::current_exe()?;
-    let mut dir = exe.parent().unwrap();
+    let mut dir = exe.parent().unwrap_or(Path::new(""));
     loop {
         if dir.join("Cargo.toml").exists() {
             return Ok(dir.to_path_buf());
@@ -294,7 +301,7 @@ fn find_crate_root() -> io::Result<PathBuf> {
                 return Err(io::Error::new(
                     io::ErrorKind::NotFound,
                     "Cannot find crate root (Cargo.toml)",
-                ))
+                ));
             }
         };
     }

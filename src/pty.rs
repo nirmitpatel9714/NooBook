@@ -8,8 +8,12 @@ pub struct PtySession {
 
 impl PtySession {
     pub fn resize(&self, cols: u16, rows: u16) -> Result<(), Box<dyn std::error::Error>> {
-        self.master
-            .resize(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })?;
+        self.master.resize(PtySize {
+            rows,
+            cols,
+            pixel_width: 0,
+            pixel_height: 0,
+        })?;
         Ok(())
     }
 

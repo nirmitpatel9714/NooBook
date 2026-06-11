@@ -98,9 +98,24 @@ mod tests {
         eprintln!("stdout = {:?}", out);
         eprintln!("stderr = {:?}", err);
 
-        assert!(out.contains("42"), "output should contain 42, got stdout: {:?} stderr: {:?}", out, err);
-        assert!(out.contains("hello"), "output should contain hello, got stdout: {:?} stderr: {:?}", out, err);
-        assert!(out.contains("__NS_SYNC__"), "output should contain __NS_SYNC__, got stdout: {:?} stderr: {:?}", out, err);
+        assert!(
+            out.contains("42"),
+            "output should contain 42, got stdout: {:?} stderr: {:?}",
+            out,
+            err
+        );
+        assert!(
+            out.contains("hello"),
+            "output should contain hello, got stdout: {:?} stderr: {:?}",
+            out,
+            err
+        );
+        assert!(
+            out.contains("__NS_SYNC__"),
+            "output should contain __NS_SYNC__, got stdout: {:?} stderr: {:?}",
+            out,
+            err
+        );
     }
 
     #[test]
@@ -115,8 +130,18 @@ mod tests {
             format!("myvar = 123\n{}", dump)
         };
         let (out, err) = run_python_code(&code);
-        assert!(out.contains("__NS_SYNC__"), "sync prefix missing, stdout: {:?} stderr: {:?}", out, err);
-        assert!(out.contains("123"), "variable 123 not in dump: stdout: {:?} stderr: {:?}", out, err);
+        assert!(
+            out.contains("__NS_SYNC__"),
+            "sync prefix missing, stdout: {:?} stderr: {:?}",
+            out,
+            err
+        );
+        assert!(
+            out.contains("123"),
+            "variable 123 not in dump: stdout: {:?} stderr: {:?}",
+            out,
+            err
+        );
     }
 
     #[test]
@@ -172,7 +197,10 @@ mod tests {
         assert!(code.contains("_nsj.loads"), "missing _nsj.loads");
         assert!(code.contains("42"), "missing 42");
         assert!(code.contains("hello"), "missing hello");
-        assert!(code.starts_with("import json"), "should start with import json");
+        assert!(
+            code.starts_with("import json"),
+            "should start with import json"
+        );
     }
 
     #[test]
@@ -192,7 +220,11 @@ mod tests {
         let code = injection_code(&state, "py").unwrap();
         let (out, err) = run_python_code(&code);
         eprintln!("stdout = {:?} stderr = {:?}", out, err);
-        assert!(err.is_empty(), "python injection should not error: {:?}", err);
+        assert!(
+            err.is_empty(),
+            "python injection should not error: {:?}",
+            err
+        );
         assert!(code.contains("msg"), "msg key missing");
         assert!(code.contains("it\\'s"), "should escape single quote");
     }
