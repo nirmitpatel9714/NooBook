@@ -271,27 +271,6 @@ Each REPL subprocess spawns 3 Tokio tasks (stdin writer, stdout reader,
 stderr reader). The state bridge injects variables before user code and
 dumps changes back afterward, using the `__NS_SYNC__` prefix protocol.
 
-## Codebase
-
-14 source files, 2,840 lines, 119.8 KB (excluding docs, README, license, tests, and `.git`).
-
-| File | Lines |
-|---|---|
-| `src/main.rs` | 874 |
-| `src/pane.rs` | 410 |
-| `src/app.rs` | 343 |
-| `src/script.rs` | 296 |
-| `src/compile.rs` | 263 |
-| `src/bridge.rs` | 208 |
-| `src/store.rs` | 165 |
-| `src/execution.rs` | 84 |
-| `src/noorc.rs` | 68 |
-| `src/state.rs` | 53 |
-| `src/config.rs` | 29 |
-| `src/lib.rs` | 27 |
-| `languages.json` | 17 |
-| `.cargo/config.toml` | 3 |
-
 ## License
 
 This project is open source. See the [LICENSE](LICENSE) file.
