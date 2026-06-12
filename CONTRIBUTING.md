@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for considering contributing to nooshell!
+Thanks for considering contributing to NooBook!
 
 ## Code of conduct
 
@@ -45,8 +45,8 @@ Small, focused proposals are easier to discuss and implement.
 ## Development setup
 
 ```sh
-git clone https://github.com/anomalyco/nooshell
-cd nooshell
+git clone https://github.com/anomalyco/NooBook
+cd NooBook
 cargo build
 ```
 

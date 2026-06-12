@@ -1,6 +1,6 @@
 # Architecture
 
-nooshell is a multi-language REPL notebook and shell built in Rust with `ratatui` for the TUI and `crossterm` for terminal handling. It runs subprocesses for each language REPL and communicates with them via stdin/stdout.
+NooBook is a multi-language REPL terminal notebook built in Rust with `ratatui` for the TUI and `crossterm` for terminal handling. It runs subprocesses for each language REPL and communicates with them via stdin/stdout.
 
 ## High-level overview
 
@@ -99,13 +99,13 @@ Batch execution of `.ns` script files with cross-language variable sharing.
 ## Data persistence
 
 ### Command history
-Stored at `%APPDATA%/nooshell/history.json` (Windows) or `~/.local/share/nooshell/history.json` (Unix). Each command is recorded with a language tag, timestamp, and output preview.
+Stored at `%APPDATA%/NooBook/history.json` (Windows) or `~/.local/share/NooBook/history.json` (Unix). Each command is recorded with a language tag, timestamp, and output preview.
 
 ### Session persistence
-Stored at `%APPDATA%/nooshell/sessions.json`. Full workspace state (cells, history, outputs, cursor positions) is serialized. Sessions can be saved/restored from the Management TUI. An `_autosave` session is saved every 10 seconds during notebook mode and offered for restoration on startup.
+Stored at `%APPDATA%/NooBook/sessions.json`. Full workspace state (cells, history, outputs, cursor positions) is serialized. Sessions can be saved/restored from the Management TUI. An `_autosave` session is saved every 10 seconds during notebook mode and offered for restoration on startup.
 
 ### Noorc — `src/noorc.rs`
-A config file at `%APPDATA%/nooshell/noorc` (Windows) or `~/.config/nooshell/noorc` (Unix) that sets:
+A config file at `%APPDATA%/NooBook/noorc` (Windows) or `~/.config/NooBook/noorc` (Unix) that sets:
 - Default language
 - Command aliases
 - Startup commands (run on boot)

@@ -151,7 +151,7 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
          edition = \"2024\"\n\
          \n\
          [dependencies]\n\
-         nooshell = {{ path = \"{noo}\" }}\n\
+         noobook = {{ path = \"{noo}\" }}\n\
          tokio = {{ version = \"1\", features = [\"full\"] }}\n",
         name = script_name,
         noo = noo_path_esc
@@ -193,7 +193,7 @@ pub fn compile(script_path: &Path, target: Target) -> io::Result<()> {
                      }}\n\
                  }}\n\
              }}\n\
-             nooshell::script::NsScript::run_embedded_with_cleanup(\n\
+             noobook::script::NsScript::run_embedded_with_cleanup(\n\
                  SCRIPT,\n\
                  LANGUAGES_JSON,\n\
                  &cleanup,\n\

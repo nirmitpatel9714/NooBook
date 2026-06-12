@@ -1,6 +1,6 @@
-//! # nooshell
+//! # NooBook
 //!
-//! A multi-language REPL notebook and shell. Run interactive REPL sessions for
+//! A multi-language REPL terminal notebook. Run interactive REPL sessions for
 //! multiple languages in notebook-style workspaces with persistent command history.
 //!
 //! ## Main components

@@ -3,12 +3,12 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Return the platform-specific data directory (`%APPDATA%/nooshell` or `~/.local/share/nooshell`).
+/// Return the platform-specific data directory (`%APPDATA%/NooBook` or `~/.local/share/NooBook`).
 fn data_dir() -> PathBuf {
     let base = std::env::var("APPDATA")
         .or_else(|_| std::env::var("HOME"))
         .unwrap_or_else(|_| ".".to_string());
-    let dir = PathBuf::from(base).join("nooshell");
+    let dir = PathBuf::from(base).join("NooBook");
     if let Err(e) = fs::create_dir_all(&dir) {
         eprintln!(
             "Warning: Failed to create data directory at {}: {}",

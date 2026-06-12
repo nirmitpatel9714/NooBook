@@ -1,4 +1,4 @@
-//! # nooshell binary
+//! # NooBook binary
 //!
 //! CLI entry point. Parses arguments and dispatches to:
 //! - **CLI mode** (`noo`) — single-pane REPL with history
@@ -13,14 +13,14 @@ use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use nooshell::app::App;
-use nooshell::config;
-use nooshell::highlight;
-use nooshell::noorc;
-use nooshell::passthrough;
-use nooshell::script::NsScript;
-use nooshell::shell_resolver;
-use nooshell::store;
+use noobook::app::App;
+use noobook::config;
+use noobook::highlight;
+use noobook::noorc;
+use noobook::passthrough;
+use noobook::script::NsScript;
+use noobook::shell_resolver;
+use noobook::store;
 use ratatui::{
     Terminal,
     backend::{Backend, CrosstermBackend},
@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 eprintln!("Script not found: {}", script_path);
                 std::process::exit(1);
             }
-            use nooshell::compile::Target;
+            use noobook::compile::Target;
             let target = if args.contains(&"--windows".to_string()) {
                 Target::Windows
             } else if args.contains(&"--linux".to_string()) {
@@ -54,7 +54,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             } else {
                 Target::Native
             };
-            nooshell::compile::compile(path, target)?;
+            noobook::compile::compile(path, target)?;
             return Ok(());
         } else {
             eprintln!("Usage: noo compile <script.ns> [--windows | --linux | --mac]");

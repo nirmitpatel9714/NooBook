@@ -1,6 +1,6 @@
-# nooshell
+# NooBook
 
-A multi-language REPL notebook and shell built in Rust. Run interactive REPL sessions
+A multi-language REPL terminal notebook built in Rust. Run interactive REPL sessions
 for multiple languages in notebook-style workspaces with persistent command history
 and cross-language variable sharing.
 

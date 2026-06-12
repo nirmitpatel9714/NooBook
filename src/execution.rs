@@ -9,7 +9,7 @@ use tokio::sync::mpsc;
 /// Currently reserved for future use by language-specific state dump scripts.
 fn state_file_path() -> PathBuf {
     let mut path = std::env::temp_dir();
-    path.push("nooshell_state.json");
+    path.push("noobook_state.json");
     path
 }
 

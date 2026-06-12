@@ -1,5 +1,5 @@
 [package]
-name = "nooshell"
+name = "noobook"
 version = "0.8.312"
 edition = "2024"
 
@@ -8,7 +8,7 @@ name = "noo"
 path = "src/main.rs"
 
 [lib]
-name = "nooshell"
+name = "noobook"
 path = "src/lib.rs"
 
 [dependencies]

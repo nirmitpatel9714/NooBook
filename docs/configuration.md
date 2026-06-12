@@ -75,7 +75,7 @@ This enables C++ syntax highlighting via `clangd` (requires `clangd` on PATH). T
 
 ## `noorc`
 
-A startup config file at `%APPDATA%/nooshell/noorc` (Windows) or `$HOME/.config/nooshell/noorc` (Unix).
+A startup config file at `%APPDATA%/NooBook/noorc` (Windows) or `$HOME/.config/NooBook/noorc` (Unix).
 
 ### Syntax
 

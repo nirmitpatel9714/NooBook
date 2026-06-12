@@ -1,13 +1,13 @@
 # Persistence
 
-nooshell persists two kinds of data to disk: **command history** and **workspace sessions**. Both are stored as JSON files in a platform-specific data directory.
+NooBook persists two kinds of data to disk: **command history** and **workspace sessions**. Both are stored as JSON files in a platform-specific data directory.
 
 ## Data directory
 
 | Platform | Path |
 | --- | --- |
-| Windows | `%APPDATA%\nooshell\` |
-| Unix    | `~/.local/share/nooshell/` (falls back to `$HOME/nooshell/`) |
+| Windows | `%APPDATA%\NooBook\` |
+| Unix    | `~/.local/share/NooBook/` (falls back to `$HOME/NooBook/`) |
 
 Set `APPDATA` (Windows) or `HOME` (Unix) to override.
 
@@ -92,7 +92,7 @@ Full workspace state can be saved and restored. This includes all cells, their i
 
 In notebook mode (`noo nbmode`), the current workspace state is automatically saved to a session with the `_autosave` ID every **10 seconds** (see `App::auto_save()` in `src/app.rs`).
 
-On startup, if an autosave exists, nooshell prompts:
+On startup, if an autosave exists, NooBook prompts:
 
 ```
 Autosaved session found. Restore? [Y/n]:

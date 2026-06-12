@@ -4,8 +4,8 @@ use std::path::PathBuf;
 
 /// Startup configuration loaded from the `noorc` file.
 ///
-/// The file is located at `%APPDATA%/nooshell/noorc` (Windows) or
-/// `~/.config/nooshell/noorc` (Unix) and supports:
+/// The file is located at `%APPDATA%/NooBook/noorc` (Windows) or
+/// `~/.config/NooBook/noorc` (Unix) and supports:
 /// - `language <key>` — set default language
 /// - `alias <name> = "<command>"` — define command aliases
 /// - Bare lines — run as startup commands
@@ -24,7 +24,7 @@ fn noorc_path() -> PathBuf {
     let base = std::env::var("APPDATA")
         .or_else(|_| std::env::var("HOME"))
         .unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(base).join("nooshell").join("noorc")
+    PathBuf::from(base).join("NooBook").join("noorc")
 }
 
 impl Noorc {

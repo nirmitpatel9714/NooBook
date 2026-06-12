@@ -17,7 +17,7 @@ From the CLI REPL mode:
 noo pass                # Same — passthrough to default shell
 ```
 
-When the shell exits (via `exit` or `Ctrl+D`), you return to the nooshell REPL.
+When the shell exits (via `exit` or `Ctrl+D`), you return to the NooBook REPL.
 
 ### Supported shells
 

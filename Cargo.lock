@@ -754,7 +754,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nooshell"
+name = "noobook"
 version = "0.8.312"
 dependencies = [
  "crossterm",
