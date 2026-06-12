@@ -581,7 +581,7 @@ where
                 }
                 tab_spans.push(ratatui::text::Span::raw("   "));
                 tab_spans.push(ratatui::text::Span::styled(
-                    "[Alt+M] Manage  [Esc] Exit  [Tab] Change Cell  [Alt+W] New Workspace",
+                    "[Alt+N]NewWS [Alt+Shift+W]DelWS [Alt+Shift+R]RenWS [Alt+←/→]Switch | [Alt+T]+Cell [Alt+W]-Cell [Alt+R]Ren [Alt+↑/↓]Nav [Shift+↑/↓]Move | [F5]/[Alt+Enter]Run | [↑/↓]History [←/→][⌫][Tab][Enter]Edit | [Alt+M]Manage [Esc]Exit",
                     Style::default().fg(Color::DarkGray),
                 ));
                 let tab_line = ratatui::text::Line::from(tab_spans);
