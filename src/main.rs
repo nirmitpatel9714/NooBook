@@ -79,36 +79,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    if args.iter().any(|a| a == "nbmode") {
-        let mut app = App::with_noorc(config, noorc.language.as_deref(), noorc.aliases.clone());
-
-        let autosave_exists = store::list_sessions().iter().any(|s| s.id == "_autosave");
-        let mut restored = false;
-        if autosave_exists {
-            print!("Autosaved session found. Restore? [Y/n]: ");
-            io::stdout().flush()?;
-            let mut answer = String::new();
-            io::stdin().read_line(&mut answer)?;
-            if !answer.trim().eq_ignore_ascii_case("n") {
-                restored = app.restore_from_autosave();
-                if restored {
-                    println!("Session restored.");
-                } else {
-                    println!("Could not restore session.");
-                }
-            } else {
-                println!("Starting fresh session.");
-            }
-        }
-
-        if !restored {
-            for cmd in &startup {
-                app.current_pane_mut().input_buffer = cmd.clone();
-                app.current_pane_mut().handle_input().await;
-            }
-        }
-        run_tui(&mut app).await?;
-    } else if args.iter().any(|a| a == "clearc") {
+    if args.iter().any(|a| a == "clearc") {
         store::clear_history();
         println!("Command history cleared.");
     } else if args.iter().any(|a| a == "delses") {
@@ -180,9 +151,39 @@ async fn main() -> Result<(), Box<dyn Error>> {
             eprintln!("Error: {}", e);
             std::process::exit(1);
         }
-    } else {
+    } else if args.iter().any(|a| a == "cli") {
         let mut app = App::with_noorc(config, noorc.language.as_deref(), noorc.aliases);
         run_cli(&mut app, &startup).await?;
+    } else {
+        // Default: notebook TUI mode
+        let mut app = App::with_noorc(config, noorc.language.as_deref(), noorc.aliases.clone());
+
+        let autosave_exists = store::list_sessions().iter().any(|s| s.id == "_autosave");
+        let mut restored = false;
+        if autosave_exists {
+            print!("Autosaved session found. Restore? [Y/n]: ");
+            io::stdout().flush()?;
+            let mut answer = String::new();
+            io::stdin().read_line(&mut answer)?;
+            if !answer.trim().eq_ignore_ascii_case("n") {
+                restored = app.restore_from_autosave();
+                if restored {
+                    println!("Session restored.");
+                } else {
+                    println!("Could not restore session.");
+                }
+            } else {
+                println!("Starting fresh session.");
+            }
+        }
+
+        if !restored {
+            for cmd in &startup {
+                app.current_pane_mut().input_buffer = cmd.clone();
+                app.current_pane_mut().handle_input().await;
+            }
+        }
+        run_tui(&mut app).await?;
     }
 
     Ok(())
@@ -655,11 +656,11 @@ where
                     }
 
                     lines.push(ratatui::text::Line::from(""));
-                    let dir_name = std::env::current_dir()
+                    let _dir_name = std::env::current_dir()
                         .ok()
                         .and_then(|d| d.file_name().map(|n| n.to_string_lossy().to_string()))
                         .unwrap_or_default();
-                    let (before, _after) = pane.input_buffer.split_at(pane.cursor_pos);
+                    let (_before, _after) = pane.input_buffer.split_at(pane.cursor_pos);
                     let (before_spans, after_spans) =
                         if let Some((ref tokens, _, _)) = app.lsp_cache {
                             highlight::highlight_split_lsp(
@@ -675,7 +676,9 @@ where
                                 pane.cursor_pos,
                             )
                         };
-                    let prompt_line = if app.renaming_cell || app.renaming_workspace {
+                    let is_rename = app.renaming_cell || app.renaming_workspace;
+
+                    if is_rename {
                         let label = if app.renaming_cell {
                             " Name:"
                         } else {
@@ -698,72 +701,71 @@ where
                         ];
                         spans.extend(before_spans);
                         spans.extend(after_spans);
-                        ratatui::text::Line::from(spans)
-                    } else {
-                        let mut spans = vec![
-                            ratatui::text::Span::styled(
-                                "➜ ",
-                                Style::default()
-                                    .fg(Color::Green)
-                                    .add_modifier(Modifier::BOLD),
-                            ),
-                            ratatui::text::Span::styled(
-                                format!("[{}]", pane.active_language),
-                                Style::default()
-                                    .fg(Color::Cyan)
-                                    .add_modifier(Modifier::BOLD),
-                            ),
-                            ratatui::text::Span::styled(
-                                format!(" In {{{}}} ", pane.execution_count + 1),
-                                Style::default()
-                                    .fg(Color::Green)
-                                    .add_modifier(Modifier::BOLD),
-                            ),
-                            ratatui::text::Span::styled(
-                                format!("({})", dir_name),
-                                Style::default().fg(Color::Yellow),
-                            ),
-                            ratatui::text::Span::raw(" "),
-                            ratatui::text::Span::styled("❯", Style::default().fg(Color::Magenta)),
-                            ratatui::text::Span::raw(" "),
-                        ];
-                        spans.extend(before_spans);
-                        spans.extend(after_spans);
-                        ratatui::text::Line::from(spans)
-                    };
-                    lines.push(prompt_line);
+                        lines.push(ratatui::text::Line::from(spans));
 
-                    let cursor_y = lines.len() - 1;
-                    let cursor_x_in_content = if app.renaming_cell || app.renaming_workspace {
-                        let label = if app.renaming_cell {
-                            " Name:"
-                        } else {
-                            " Workspace name:"
-                        };
-                        let mut count = "✎".chars().count();
-                        count += label.chars().count();
-                        count += 1;
-                        count += before.chars().count();
-                        count
+                        let cursor_col = pane.cursor_pos;
+                        let cursor_x = chunks[i].x + 1 + cursor_col as u16
+                            + "✎".chars().count() as u16
+                            + label.chars().count() as u16 + 1;
+                        let cursor_y = chunks[i].y + 1 + (lines.len() - 1) as u16;
+                        f.set_cursor_position((cursor_x, cursor_y));
                     } else {
-                        let mut count = "➜ ".chars().count();
-                        count += format!("[{}]", pane.active_language).chars().count();
-                        count += format!(" In {{{}}} ", pane.execution_count + 1)
-                            .chars()
-                            .count();
-                        count += format!("({})", dir_name).chars().count();
-                        count += " ❯ ".chars().count();
-                        count += before.chars().count();
-                        count
-                    };
-                    let cursor_x = chunks[i].x + 1 + cursor_x_in_content as u16;
-                    let cursor_y = chunks[i].y + 1 + cursor_y as u16;
+                        let all_spans: Vec<ratatui::text::Span<'static>> =
+                            before_spans.into_iter().chain(after_spans).collect();
+                        let total_lines = pane.input_buffer.split('\n').count().max(1);
+                        let line_num_width = total_lines.to_string().len().max(2);
+
+                        let mut code_lines: Vec<Vec<ratatui::text::Span<'static>>> = Vec::new();
+                        code_lines.push(Vec::new());
+
+                        for span in all_spans {
+                            let span_text = span.content.to_string();
+                            let style = span.style;
+                            for (i, part) in span_text.split('\n').enumerate() {
+                                if i > 0 {
+                                    code_lines.push(Vec::new());
+                                }
+                                if !part.is_empty() {
+                                    code_lines.last_mut().unwrap().push(
+                                        ratatui::text::Span::styled(part.to_string(), style),
+                                    );
+                                }
+                            }
+                        }
+
+                        for (line_idx, content_spans) in code_lines.iter().enumerate() {
+                            let line_num_str = format!(
+                                "{:>width$} │ ",
+                                line_idx + 1,
+                                width = line_num_width
+                            );
+                            let mut full_spans = vec![
+                                ratatui::text::Span::styled(
+                                    line_num_str,
+                                    Style::default().fg(Color::DarkGray),
+                                ),
+                            ];
+                            full_spans.extend(content_spans.iter().cloned());
+                            lines.push(ratatui::text::Line::from(full_spans));
+                        }
+
+                        let code_line_count = code_lines.len();
+                        let before_cursor = &pane.input_buffer[..pane.cursor_pos];
+                        let cursor_line_offset = before_cursor.matches('\n').count();
+                        let last_newline = before_cursor.rfind('\n').map(|i| i + 1).unwrap_or(0);
+                        let cursor_col = before_cursor[last_newline..].chars().count();
+
+                        let cursor_y = lines.len() - code_line_count + cursor_line_offset;
+                        let cursor_x_in_content = line_num_width + 3 + cursor_col;
+                        let cursor_x = chunks[i].x + 1 + cursor_x_in_content as u16;
+                        let cursor_y = chunks[i].y + 1 + cursor_y as u16;
+                        f.set_cursor_position((cursor_x, cursor_y));
+                    }
 
                     let paragraph = Paragraph::new(lines)
                         .block(block)
                         .wrap(Wrap { trim: false });
                     f.render_widget(paragraph, chunks[i]);
-                    f.set_cursor_position((cursor_x, cursor_y));
                 } else {
                     let paragraph = Paragraph::new(vec![ratatui::text::Line::from(format!(
                         " {} outputs · {} history",
@@ -860,22 +862,28 @@ where
                     }
                 }
                 KeyCode::Tab => {
-                    app.renaming_cell = false;
-                    app.renaming_workspace = false;
-                    let ws = app.current_workspace_mut();
-                    if ws.active_pane + 1 < ws.panes.len() {
-                        ws.active_pane += 1;
+                    if app.renaming_cell || app.renaming_workspace {
+                        app.commit_rename();
+                        continue;
+                    }
+                    let pane = app.current_pane_mut();
+                    for _ in 0..4 {
+                        pane.input_buffer.insert(pane.cursor_pos, ' ');
+                        pane.cursor_pos += 1;
                     }
                 }
                 KeyCode::BackTab => {
-                    app.renaming_cell = false;
-                    app.renaming_workspace = false;
-                    let ws = app.current_workspace_mut();
-                    if ws.active_pane > 0 {
-                        ws.active_pane -= 1;
+                    if app.renaming_cell || app.renaming_workspace {
+                        app.commit_rename();
+                        continue;
+                    }
+                    let pane = app.current_pane_mut();
+                    for _ in 0..4 {
+                        pane.input_buffer.insert(pane.cursor_pos, ' ');
+                        pane.cursor_pos += 1;
                     }
                 }
-                KeyCode::Enter => {
+                KeyCode::F(5) => {
                     if app.renaming_cell || app.renaming_workspace {
                         app.commit_rename();
                         continue;
@@ -922,6 +930,65 @@ where
                         app.record_command(&lang, &input, &output);
                         app.auto_save();
                     }
+                }
+                KeyCode::Enter
+                    if key.modifiers.contains(KeyModifiers::ALT) =>
+                {
+                    if app.renaming_cell || app.renaming_workspace {
+                        app.commit_rename();
+                        continue;
+                    }
+                    let input = {
+                        let p = app.current_pane_mut();
+                        p.input_buffer.clone()
+                    };
+                    if let Some((target_lang, cmd)) = parse_lang_command(&input, &app.config) {
+                        let state = app.state.clone();
+                        let ws = &mut app.workspaces[app.active_workspace];
+                        let idx = ws.ensure_pane(&target_lang, &app.config, state);
+                        ws.active_pane = idx;
+                        app.current_pane_mut().input_buffer = cmd.clone();
+                        app.current_pane_mut().handle_input().await;
+                        app.record_command(&target_lang, &cmd, &[]);
+                        app.auto_save();
+                    } else {
+                        let input_parts: Vec<&str> = input.split_whitespace().collect();
+                        if input_parts.len() == 2
+                            && input_parts[0] == "noo"
+                            && app.config.contains_key(input_parts[1])
+                        {
+                            let state = app.state.clone();
+                            let ws = &mut app.workspaces[app.active_workspace];
+                            let idx = ws.ensure_pane(input_parts[1], &app.config, state);
+                            ws.active_pane = idx;
+                            continue;
+                        }
+                        let lang = {
+                            let p = app.current_pane_mut();
+                            p.active_language.clone()
+                        };
+                        if let Some(cmd) = app.current_pane_mut().handle_input().await
+                            && cmd == "exit"
+                        {
+                            app.running = false;
+                            return Ok(());
+                        }
+                        let output = {
+                            let p = app.current_pane_mut();
+                            p.output_lines.clone()
+                        };
+                        app.record_command(&lang, &input, &output);
+                        app.auto_save();
+                    }
+                }
+                KeyCode::Enter => {
+                    if app.renaming_cell || app.renaming_workspace {
+                        app.commit_rename();
+                        continue;
+                    }
+                    let pane = app.current_pane_mut();
+                    pane.input_buffer.insert(pane.cursor_pos, '\n');
+                    pane.cursor_pos += 1;
                 }
                 KeyCode::Backspace => {
                     let pane = app.current_pane_mut();
