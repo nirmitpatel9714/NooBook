@@ -1,6 +1,6 @@
 [package]
 name = "noobook"
-version = "0.8.312"
+version = "0.9.2"
 edition = "2024"
 
 [[bin]]

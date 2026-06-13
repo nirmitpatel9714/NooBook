@@ -125,6 +125,8 @@ pub struct App {
     pub lsp_clients: HashMap<String, LspClient>,
     /// Cached LSP tokens for the active pane, recomputed before each draw.
     pub lsp_cache: Option<(Vec<LspToken>, String, String)>,
+    pub show_help: bool,
+    pub help_scroll: u16,
 }
 
 impl App {
@@ -143,6 +145,8 @@ impl App {
             renaming_workspace: false,
             lsp_clients: HashMap::new(),
             lsp_cache: None,
+            show_help: false,
+            help_scroll: 0,
         }
     }
 
@@ -168,6 +172,8 @@ impl App {
             renaming_workspace: false,
             lsp_clients: HashMap::new(),
             lsp_cache: None,
+            show_help: false,
+            help_scroll: 0,
         }
     }
 

@@ -26,7 +26,7 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, Paragraph, Wrap},
 };
 use std::{env, error::Error, io, io::Write, path::Path, time::Duration};
 
@@ -526,12 +526,12 @@ async fn run_tui(app: &mut App) -> Result<(), Box<dyn Error>> {
 
     let res = run_app(&mut terminal, app).await;
 
-    disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
     )?;
+    disable_raw_mode()?;
     terminal.show_cursor()?;
 
     if let Err(err) = res {
@@ -581,7 +581,7 @@ where
                 }
                 tab_spans.push(ratatui::text::Span::raw("   "));
                 tab_spans.push(ratatui::text::Span::styled(
-                    "[Alt+N]NewWS [Alt+Shift+W]DelWS [Alt+Shift+R]RenWS [Alt+←/→]Switch | [Alt+T]+Cell [Alt+W]-Cell [Alt+R]Ren [Alt+↑/↓]Nav [Shift+↑/↓]Move | [F5]/[Alt+Enter]Run | [↑/↓]History [←/→][⌫][Tab][Enter]Edit | [Alt+M]Manage [Esc]Exit",
+                    "[F1] Help",
                     Style::default().fg(Color::DarkGray),
                 ));
                 let tab_line = ratatui::text::Line::from(tab_spans);
@@ -776,13 +776,115 @@ where
                     f.render_widget(paragraph, chunks[i]);
                 }
             }
+
+            // ── help popup ──
+            if app.show_help {
+                let area = f.area();
+                let popup_width = area.width.saturating_sub(6).min(70);
+                let popup_height = area.height.saturating_sub(4).min(30);
+                let popup_x = (area.width - popup_width) / 2;
+                let popup_y = (area.height - popup_height) / 2;
+                let popup_area = ratatui::layout::Rect {
+                    x: popup_x,
+                    y: popup_y,
+                    width: popup_width,
+                    height: popup_height,
+                };
+
+                f.render_widget(Clear, popup_area);
+
+                let help_text = vec![
+                    "  General",
+                    "    Esc          Exit / Cancel rename",
+                    "    F1           Toggle this help",
+                    "",
+                    "  Workspaces",
+                    "    Alt+N        New workspace",
+                    "    Alt+Shift+W  Delete workspace",
+                    "    Alt+Shift+R  Rename workspace",
+                    "    Alt+←/→     Switch workspace",
+                    "",
+                    "  Cells",
+                    "    Alt+T        Add cell",
+                    "    Alt+W        Remove cell",
+                    "    Alt+R        Rename cell",
+                    "    Alt+↑/↓     Navigate cells",
+                    "    Shift+↑/↓   Move cell",
+                    "",
+                    "  Editing",
+                    "    ←/→          Move cursor",
+                    "    ↑/↓          History navigation",
+                    "    Tab          Insert 4 spaces",
+                    "    Enter        Insert newline",
+                    "    Backspace    Delete character",
+                    "",
+                    "  Execution",
+                    "    F5           Run cell",
+                    "    Alt+Enter    Run cell",
+                    "",
+                    "  Management",
+                    "    Alt+M        Manage sessions/history",
+                ];
+
+                let visible_height = popup_height.saturating_sub(2) as usize;
+                let max_scroll = (help_text.len()).saturating_sub(visible_height);
+                if app.help_scroll as usize > max_scroll {
+                    app.help_scroll = max_scroll as u16;
+                }
+
+                let lines: Vec<ratatui::text::Line> = help_text
+                    .iter()
+                    .enumerate()
+                    .skip(app.help_scroll as usize)
+                    .take(visible_height)
+                    .map(|(_, text)| {
+                        let style = if text.is_empty() {
+                            Style::default()
+                        } else if !text.starts_with("  ") {
+                            Style::default()
+                                .fg(Color::Cyan)
+                                .add_modifier(Modifier::BOLD)
+                        } else {
+                            Style::default().fg(Color::White)
+                        };
+                        ratatui::text::Line::from(ratatui::text::Span::styled(*text, style))
+                    })
+                    .collect();
+
+                let block = Block::default()
+                    .title(" Key Bindings ")
+                    .borders(Borders::ALL)
+                    .border_type(ratatui::widgets::BorderType::Rounded)
+                    .border_style(Style::default().fg(Color::Yellow));
+                let paragraph = Paragraph::new(lines).block(block);
+                f.render_widget(paragraph, popup_area);
+            }
         })?;
 
         if event::poll(Duration::from_millis(50))?
             && let Event::Key(key) = event::read()?
             && key.kind == event::KeyEventKind::Press
         {
+            if app.show_help {
+                match key.code {
+                    KeyCode::Esc | KeyCode::F(1) => {
+                        app.show_help = false;
+                    }
+                    KeyCode::Up => {
+                        app.help_scroll = app.help_scroll.saturating_sub(1);
+                    }
+                    KeyCode::Down => {
+                        app.help_scroll = app.help_scroll.saturating_add(1);
+                    }
+                    _ => {}
+                }
+                continue;
+            }
             match key.code {
+                KeyCode::F(1) => {
+                    app.show_help = !app.show_help;
+                    app.help_scroll = 0;
+                }
                 KeyCode::Esc => {
                     if app.renaming_cell || app.renaming_workspace {
                         app.cancel_rename();
@@ -1016,6 +1118,7 @@ where
                         let _ = run_manage_tui(app).await;
                         enable_raw_mode()?;
                         execute!(io::stdout(), EnterAlternateScreen, EnableMouseCapture)?;
+                        terminal.clear()?;
                     }
                     _ => {}
                 },
@@ -1199,12 +1302,12 @@ async fn run_manage_tui(_app: &mut App) -> Result<(), Box<dyn Error>> {
         }
     };
 
-    disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
     )?;
+    disable_raw_mode()?;
     terminal.show_cursor()?;
 
     res.map_err(|e| e.into())
